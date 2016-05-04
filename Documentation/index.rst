@@ -4,7 +4,7 @@ Automatically generated redirects in Neos
 
 Whenever you change the `URL path segment` or move a document node, a redirect will automatically be generated as soon as it is published into the live workspace.
 
-.. note:: To get an overview over all currently active redirects you can always run ``./flow redirection:list``. For further details check the `Neos Command Reference`.
+.. note:: To get an overview over all currently active redirects you can always run ``./flow redirect:list``. For further details check the `Neos Command Reference`.
 
 In the future, there will also be a backend module to show and manage redirects in the Neos backend.
 
