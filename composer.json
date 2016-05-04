@@ -5,7 +5,7 @@
     "license": "GPL-3.0+",
     "require": {
         "neos/redirecthandler": "~1.0",
-        "typo3/neos": "~2.2"
+        "typo3/neos": "~2.2 || dev-master"
     },
     "autoload": {
         "psr-4": {
