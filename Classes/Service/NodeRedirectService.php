@@ -111,7 +111,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
             throw new Exception('The target URI path of the node could not be resolved', 1451945358);
         }
 
-        $hosts = $this->getHostPatterns($node->getContext());
+        $hosts = $this->getHostnames($node->getContext());
 
         // The page has been removed
         if ($node->isRemoved()) {
@@ -144,17 +144,19 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     }
 
     /**
+     * Collects all hostnames from the Domain entries attached to the current site.
+     *
      * @param ContentContext $contentContext
      * @return array
      */
-    protected function getHostPatterns(ContentContext $contentContext)
+    protected function getHostnames(ContentContext $contentContext)
     {
         $site = $contentContext->getCurrentSite();
         $domains = [];
         if ($site !== null) {
             foreach ($site->getDomains() as $domain) {
                 /** @var Domain $domain */
-                $domains[] = $domain->getHostPattern();
+                $domains[] = $domain->getHostname();
             }
         }
         return $domains;
