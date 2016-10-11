@@ -79,7 +79,7 @@ Feature: Redirects are created automatically when the URI of an preexisting node
     When I get a node by path "/sites/typo3cr/mail" with the following context:
       | Workspace  | Language |
       | user-admin | de,en    |
-    And I make the node visible
+    And I unhide the node
     And I publish the node
     Then I should have a redirect with sourceUri "important-page-from-the-old-site" and targetUri "en/mail.html"
     And I should have no redirect with sourceUri "en/mail.html" and targetUri "de/mail.html"
