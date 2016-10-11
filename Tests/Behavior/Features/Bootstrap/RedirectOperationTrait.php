@@ -125,7 +125,7 @@ trait RedirectOperationTrait
     {
         $httpRequest = Request::createFromEnvironment();
 
-        return $httpRequest->getBaseUri()->getPath().'index.php/'.$uri;
+        return ltrim($httpRequest->getBaseUri()->getPath() . 'index.php/' . $uri, '/');
     }
 
     /**
