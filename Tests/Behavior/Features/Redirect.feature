@@ -39,7 +39,7 @@ Feature: Redirects are created automatically when the URI of an existing node is
 
   #fixed in 1.0.2
   @fixtures
-  Scenario: Delete an existing redirect when the target URI matches the source URI of the new redirect
+  Scenario: Retarget an existing redirect when the target URI matches the source URI of the new redirect
     When I get a node by path "/sites/typo3cr/about" with the following context:
       | Workspace  |
       | user-admin |
