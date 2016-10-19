@@ -23,11 +23,11 @@ use TYPO3\Flow\Mvc\Routing\UriBuilder;
 use TYPO3\Flow\Persistence\PersistenceManagerInterface;
 use TYPO3\Neos\Domain\Model\Domain;
 use TYPO3\Neos\Domain\Service\ContentContext;
+use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
 use TYPO3\Neos\Routing\Exception;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
-use TYPO3\TYPO3CR\Domain\Service\ContextFactory;
 
 /**
  * Service that creates redirects for moved / deleted nodes.
@@ -69,7 +69,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
 
     /**
      * @Flow\Inject
-     * @var ContextFactory
+     * @var ContextFactoryInterface
      */
     protected $contextFactory;
 
@@ -98,8 +98,9 @@ class NodeRedirectService implements NodeRedirectServiceInterface
         $context = $this->contextFactory->create([
             'workspaceName' => 'live',
             'invisibleContentShown' => true,
-            'dimensions' => $node->getDimensions()
+            'dimensions' => $node->getContext()->getDimensions()
         ]);
+
         $targetNode = $context->getNodeByIdentifier($node->getIdentifier());
         if ($targetNode === null) {
             // The page has been added
@@ -130,12 +131,9 @@ class NodeRedirectService implements NodeRedirectServiceInterface
             return;
         }
 
-
         $this->flushRoutingCacheForNode($targetNode);
         $statusCode = (integer)$this->defaultStatusCode['redirect'];
         $this->redirectStorage->addRedirect($targetNodeUriPath, $nodeUriPath, $statusCode, $hosts);
-        /** @var ContentContext $contentContext */
-
 
         $q = new FlowQuery([$node]);
         foreach ($q->children('[instanceof TYPO3.Neos:Document]') as $childrenNode) {
