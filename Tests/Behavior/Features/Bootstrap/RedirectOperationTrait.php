@@ -20,14 +20,6 @@ use Neos\RedirectHandler\DatabaseStorage\RedirectStorage;
 trait RedirectOperationTrait
 {
     /**
-     * @BeforeScenario @fixtures
-     */
-    public function beforeRedirectScenarioDispatcher()
-    {
-        $this->resetRedirectInstances();
-    }
-
-    /**
      * @Given /^I have the following redirects:$/
      * @When /^I create the following redirects:$/
      */
@@ -126,13 +118,5 @@ trait RedirectOperationTrait
         $httpRequest = Request::createFromEnvironment();
 
         return ltrim($httpRequest->getBaseUri()->getPath() . 'index.php/' . $uri, '/');
-    }
-
-    /**
-     * Makes sure to reset all redirect instances which might still be stored in the RedirectRepository.
-     */
-    public function resetRedirectInstances()
-    {
-        $this->objectManager->get(RedirectRepository::class)->removeAll();
     }
 }
