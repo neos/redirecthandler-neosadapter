@@ -20,7 +20,7 @@ use Neos\RedirectHandler\NeosAdapter\Tests\Behavior\Features\Bootstrap\RedirectO
 /**
  * Features context
  */
-class FeatureContext extends \Behat\Behat\Context\BehatContext
+class FeatureContext extends \Flowpack\Behat\Tests\Behat\FlowContext
 {
     use NodeOperationsTrait;
     use NodeAuthorizationTrait;
@@ -40,19 +40,9 @@ class FeatureContext extends \Behat\Behat\Context\BehatContext
      */
     public function __construct(array $parameters)
     {
-        $this->useContext('flow', new \Flowpack\Behat\Tests\Behat\FlowContext($parameters));
-        $this->objectManager = $this->getSubcontext('flow')->getObjectManager();
-        $this->environment = $this->objectManager->get(Environment::class);
+        parent::__construct($parameters);
         $this->nodeAuthorizationService = $this->objectManager->get(AuthorizationService::class);
         $this->nodeTypeManager = $this->objectManager->get(NodeTypeManager::class);
         $this->setupSecurity();
-    }
-
-    /**
-     * @return ObjectManagerInterface
-     */
-    protected function getObjectManager()
-    {
-        return $this->objectManager;
     }
 }
