@@ -1,9 +1,9 @@
-Feature: Redirects are created automatically when the URI of an preexisting node changes
+Feature: Redirects are created automatically when the URI of an existing node is changed
   Background:
-    Given  I have the following content dimensions:
+    Given I am authenticated with role "TYPO3.Neos:Editor"
+    And  I have the following content dimensions:
       | Identifier | Default | Presets                |
       | language   | en      | en=en; de=de,en; fr=fr |
-
     And I have the following nodes:
       | Identifier                           | Path                   | Node Type                  | Properties                                | Workspace | Hidden | Language      |
       | ecf40ad1-3119-0a43-d02e-55f8b5aa3c70 | /sites                 | unstructured               |                                           | live      |        |               |
@@ -64,7 +64,7 @@ Feature: Redirects are created automatically when the URI of an preexisting node
   Scenario: Redirects should aways be created in the same dimension the node is in and not the fallback dimension
     When I get a node by path "/sites/typo3cr/imprint" with the following context:
       | Workspace  | Language |
-      | user-admin | de,en   |
+      | user-admin | de,en    |
     And I set the node property "uriPathSegment" to "impressum-neu"
     And I publish the node
     Then I should have a redirect with sourceUri "de/impressum.html" and targetUri "de/impressum-neu.html"
