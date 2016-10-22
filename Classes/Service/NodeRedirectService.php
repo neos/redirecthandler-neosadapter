@@ -155,6 +155,9 @@ class NodeRedirectService implements NodeRedirectServiceInterface
             foreach ($site->getDomains() as $domain) {
                 /** @var Domain $domain */
                 $domains[] = $domain->getHostname();
+                if ($domain->getActive()) {
+                    $domains[] = $domain->getHostPattern();
+                }
             }
         }
         return $domains;
