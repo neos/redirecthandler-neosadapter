@@ -152,12 +152,9 @@ class NodeRedirectService implements NodeRedirectServiceInterface
         $site = $contentContext->getCurrentSite();
         $domains = [];
         if ($site !== null) {
-            foreach ($site->getDomains() as $domain) {
+            foreach ($site->getActiveDomains() as $domain) {
                 /** @var Domain $domain */
-                $domains[] = $domain->getHostname();
-                if ($domain->getActive()) {
-                    $domains[] = $domain->getHostPattern();
-                }
+                $domains[] = $domain->getHostPattern();
             }
         }
         return $domains;
