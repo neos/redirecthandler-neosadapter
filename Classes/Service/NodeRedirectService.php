@@ -28,6 +28,7 @@ use TYPO3\Neos\Routing\Exception;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
+use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
 
 /**
  * Service that creates redirects for moved / deleted nodes.
@@ -86,6 +87,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     protected $defaultStatusCode;
 
     /**
+     * @Flow\Inject
+     * @var ContentDimensionCombinator
+     */
+    protected $contentDimensionCombinator;
+
+    /**
      * {@inheritdoc}
      */
     public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
@@ -95,6 +102,35 @@ class NodeRedirectService implements NodeRedirectServiceInterface
             return;
         }
 
+        $this->createRedirectsForNodesInDimensions($node, $targetWorkspace);
+    }
+
+    /**
+     * Cycle dimensions and create redirects if necessary.
+     *
+     * @param $node
+     * @param $targetWorkspace
+     */
+    protected function createRedirectsForNodesInDimensions(NodeInterface $node, Workspace $targetWorkspace)
+    {
+        foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $allowedCombination) {
+            $nodeInDimensions = $this->getNodeInDimensions($node, $allowedCombination);
+            if ($nodeInDimensions === null) {
+                continue;
+            }
+
+            $this->createRedirect($nodeInDimensions, $targetWorkspace);
+        }
+    }
+
+    /**
+     * Creates the actual redirect for the given node and possible children.
+     *
+     * @param NodeInterface $node
+     * @param Workspace $targetWorkspace
+     */
+    protected function createRedirect(NodeInterface $node, Workspace $targetWorkspace) {
+
         $context = $this->contextFactory->create([
             'workspaceName' => 'live',
             'invisibleContentShown' => true,
@@ -103,7 +139,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
 
         $targetNode = $context->getNodeByIdentifier($node->getIdentifier());
         if ($targetNode === null) {
-            // The page has been added
+            // The page has been added or is not available in live context for the given dimension
             return;
         }
 
@@ -133,11 +169,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
 
         $this->flushRoutingCacheForNode($targetNode);
         $statusCode = (integer)$this->defaultStatusCode['redirect'];
+
         $this->redirectStorage->addRedirect($targetNodeUriPath, $nodeUriPath, $statusCode, $hosts);
 
         $q = new FlowQuery([$node]);
         foreach ($q->children('[instanceof TYPO3.Neos:Document]') as $childrenNode) {
-            $this->createRedirectsForPublishedNode($childrenNode, $targetWorkspace);
+            $this->createRedirect($childrenNode, $targetWorkspace);
         }
     }
 
@@ -208,5 +245,23 @@ class NodeRedirectService implements NodeRedirectServiceInterface
                 ->setCreateAbsoluteUri(false);
         }
         return $this->uriBuilder;
+    }
+
+    /**
+     * Get the given node in the given dimensions.
+     * If it doesn't exist the method returns null.
+     *
+     * @param NodeInterface $node
+     * @param array $dimensions
+     * @return NodeInterface|null
+     */
+    protected function getNodeInDimensions(NodeInterface $node, array $dimensions)
+    {
+        $context = $this->contextFactory->create([
+            'workspaceName' => $node->getWorkspace()->getName(),
+            'dimensions' => $dimensions,
+            'invisibleContentShown' => true,
+        ]);
+        return $context->getNode($node->getPath());
     }
 }
