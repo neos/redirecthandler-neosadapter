@@ -11,7 +11,7 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
  * source code.
  */
 
-use TYPO3\Neos\Routing\Exception;
+use Neos\Neos\Routing\Exception;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 
@@ -21,7 +21,7 @@ use TYPO3\TYPO3CR\Domain\Model\Workspace;
 interface NodeRedirectServiceInterface
 {
     /**
-     * Creates a redirect for the node if it is a 'TYPO3.Neos:Document' node and its URI has changed
+     * Creates a redirect for the node if it is a 'Neos.Neos:Document' node and its URI has changed
      *
      * @param NodeInterface $node The node that is about to be published
      * @param Workspace $targetWorkspace
