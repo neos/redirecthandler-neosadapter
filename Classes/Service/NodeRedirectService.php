@@ -12,7 +12,7 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
  */
 
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
-use TYPO3\Eel\FlowQuery\FlowQuery;
+use Neos\Eel\FlowQuery\FlowQuery;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Request;
 use Neos\Flow\Log\SystemLoggerInterface;
