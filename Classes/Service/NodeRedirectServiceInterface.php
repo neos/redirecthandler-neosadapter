@@ -12,8 +12,8 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
  */
 
 use Neos\Neos\Routing\Exception;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
-use TYPO3\TYPO3CR\Domain\Model\Workspace;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\Workspace;
 
 /**
  * Service that creates redirects for moved / deleted nodes
