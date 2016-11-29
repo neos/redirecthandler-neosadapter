@@ -12,22 +12,22 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
  */
 
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
-use TYPO3\Eel\FlowQuery\FlowQuery;
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Http\Request;
-use TYPO3\Flow\Log\SystemLoggerInterface;
-use TYPO3\Flow\Mvc\ActionRequest;
-use TYPO3\Flow\Mvc\Exception\NoMatchingRouteException;
-use TYPO3\Flow\Mvc\Routing\RouterCachingService;
-use TYPO3\Flow\Mvc\Routing\UriBuilder;
-use TYPO3\Flow\Persistence\PersistenceManagerInterface;
-use TYPO3\Neos\Domain\Model\Domain;
-use TYPO3\Neos\Domain\Service\ContentContext;
-use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
-use TYPO3\Neos\Routing\Exception;
-use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
-use TYPO3\TYPO3CR\Domain\Model\Workspace;
-use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
+use Neos\Eel\FlowQuery\FlowQuery;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\Request;
+use Neos\Flow\Log\SystemLoggerInterface;
+use Neos\Flow\Mvc\ActionRequest;
+use Neos\Flow\Mvc\Exception\NoMatchingRouteException;
+use Neos\Flow\Mvc\Routing\RouterCachingService;
+use Neos\Flow\Mvc\Routing\UriBuilder;
+use Neos\Flow\Persistence\PersistenceManagerInterface;
+use Neos\Neos\Domain\Model\Domain;
+use Neos\Neos\Domain\Service\ContentContext;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
+use Neos\Neos\Routing\Exception;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 
 /**
  * Service that creates redirects for moved / deleted nodes.
@@ -91,7 +91,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
     {
         $nodeType = $node->getNodeType();
-        if ($targetWorkspace->getName() !== 'live' || !$nodeType->isOfType('TYPO3.Neos:Document')) {
+        if ($targetWorkspace->getName() !== 'live' || !$nodeType->isOfType('Neos.Neos:Document')) {
             return;
         }
 
@@ -136,7 +136,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
         $this->redirectStorage->addRedirect($targetNodeUriPath, $nodeUriPath, $statusCode, $hosts);
 
         $q = new FlowQuery([$node]);
-        foreach ($q->children('[instanceof TYPO3.Neos:Document]') as $childrenNode) {
+        foreach ($q->children('[instanceof Neos.Neos:Document]') as $childrenNode) {
             $this->createRedirectsForPublishedNode($childrenNode, $targetWorkspace);
         }
     }
@@ -186,7 +186,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     {
         try {
             return $this->getUriBuilder()
-                ->uriFor('show', ['node' => $nodeContextPath], 'Frontend\\Node', 'TYPO3.Neos');
+                ->uriFor('show', ['node' => $nodeContextPath], 'Frontend\\Node', 'Neos.Neos');
         } catch (NoMatchingRouteException $exception) {
             return null;
         }

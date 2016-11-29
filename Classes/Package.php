@@ -12,9 +12,9 @@ namespace Neos\RedirectHandler\NeosAdapter;
  */
 
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
-use TYPO3\Flow\Core\Bootstrap;
-use TYPO3\Flow\Package\Package as BasePackage;
-use TYPO3\TYPO3CR\Domain\Model\Workspace;
+use Neos\Flow\Core\Bootstrap;
+use Neos\Flow\Package\Package as BasePackage;
+use Neos\ContentRepository\Domain\Model\Workspace;
 
 /**
  * The Neos RedirectHandler NeosAdapter Package
