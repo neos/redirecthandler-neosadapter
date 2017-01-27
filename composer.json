@@ -4,8 +4,8 @@
     "description": "Neos Redirect Handler",
     "license": "GPL-3.0+",
     "require": {
-        "neos/redirecthandler": "~1.0",
-        "neos/neos": "~3.0 || dev-master"
+        "neos/redirecthandler": "^2.0",
+        "neos/neos": "^3.0"
     },
     "autoload": {
         "psr-4": {
@@ -14,7 +14,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "1.0.x-dev"
+            "dev-master": "2.0.x-dev"
         },
         "applied-flow-migrations": [
             "TYPO3.FLOW3-201209201112",
