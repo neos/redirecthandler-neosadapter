@@ -90,6 +90,23 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      */
     public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
     {
+        try {
+            $this->executeRedirectsForPublishedNode($node, $targetWorkspace);
+        } catch (\Exception $exception) {
+            $this->systemLogger->log(sprintf('Can not create redirect for the node = %s in workspace = %s. See original exception: "%s"', $node->getContextPath(), $targetWorkspace->getName(), $exception->getMessage()), LOG_WARNING);
+        }
+    }
+
+    /**
+     * Creates a redirect for the node if it is a 'Neos.Neos:Document' node and its URI has changed
+     *
+     * @param NodeInterface $node The node that is about to be published
+     * @param Workspace $targetWorkspace
+     * @return void
+     * @throws Exception
+     */
+    protected function executeRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
+    {
         $nodeType = $node->getNodeType();
         if ($targetWorkspace->getName() !== 'live' || !$nodeType->isOfType('Neos.Neos:Document')) {
             return;
@@ -137,7 +154,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
 
         $q = new FlowQuery([$node]);
         foreach ($q->children('[instanceof Neos.Neos:Document]') as $childrenNode) {
-            $this->createRedirectsForPublishedNode($childrenNode, $targetWorkspace);
+            $this->executeRedirectsForPublishedNode($childrenNode, $targetWorkspace);
         }
     }
 
