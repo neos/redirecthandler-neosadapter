@@ -2,7 +2,7 @@
     "name": "neos/redirecthandler-neosadapter",
     "type": "neos-package",
     "description": "Neos Redirect Handler",
-    "license": "GPL-3.0+",
+    "license": "GPL-3.0-or-later",
     "require": {
         "neos/redirecthandler": "~1.0",
         "typo3/neos": "~2.2 || dev-master"
