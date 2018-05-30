@@ -86,6 +86,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     protected $defaultStatusCode;
 
     /**
+     * @Flow\InjectConfiguration(path="enableRemovedNodeRedirect", package="Neos.RedirectHandler.NeosAdapter")
+     * @var array
+     */
+    protected $enableRemovedNodeRedirect;
+
+    /**
      * {@inheritdoc}
      */
     public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
@@ -133,9 +139,15 @@ class NodeRedirectService implements NodeRedirectServiceInterface
 
         // The page has been removed
         if ($node->isRemoved()) {
-            $this->flushRoutingCacheForNode($targetNode);
-            $statusCode = (integer)$this->defaultStatusCode['gone'];
-            $this->redirectStorage->addRedirect($targetNodeUriPath, '', $statusCode, $hosts);
+            // By default the redirect handling for removed nodes is activated.
+            // If it is deactivated in your settings you will be able to handle the redirects on your own.
+            // For example redirect to dedicated landing pages for deleted campaign NodeTypes
+            if ($this->enableRemovedNodeRedirect) {
+                $this->flushRoutingCacheForNode($targetNode);
+                $statusCode = (integer)$this->defaultStatusCode['gone'];
+                $this->redirectStorage->addRedirect($targetNodeUriPath, '', $statusCode, $hosts);
+            }
+
             return;
         }
 
