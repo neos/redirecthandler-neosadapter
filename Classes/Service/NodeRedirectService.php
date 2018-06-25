@@ -11,8 +11,8 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
  * source code.
  */
 
+use Neos\ContentRepository\Domain\Factory\NodeFactory;
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
-use Neos\Eel\FlowQuery\FlowQuery;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Request;
 use Neos\Flow\Log\SystemLoggerInterface;
@@ -27,7 +27,6 @@ use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Neos\Routing\Exception;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
-use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 
 /**
  * Service that creates redirects for moved / deleted nodes.
@@ -38,12 +37,6 @@ use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
  */
 class NodeRedirectService implements NodeRedirectServiceInterface
 {
-    /**
-     * @Flow\Inject
-     * @var NodeDataRepository
-     */
-    protected $nodeDataRepository;
-
     /**
      * @var UriBuilder
      */
@@ -72,6 +65,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @var ContextFactoryInterface
      */
     protected $contextFactory;
+
+    /**
+     * @Flow\Inject
+     * @var NodeFactory
+     */
+    protected $nodeFactory;
 
     /**
      * @Flow\Inject
@@ -106,67 +105,71 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     /**
      * Creates a redirect for the node if it is a 'Neos.Neos:Document' node and its URI has changed
      *
-     * @param NodeInterface $node The node that is about to be published
+     * @param NodeInterface $publishedNode The node that is about to be published
      * @param Workspace $targetWorkspace
      * @return void
      * @throws Exception
+     * @throws \Neos\Eel\Exception
+     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    protected function executeRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
+    protected function executeRedirectsForPublishedNode(NodeInterface $publishedNode, Workspace $targetWorkspace)
     {
-        $nodeType = $node->getNodeType();
+        $nodeType = $publishedNode->getNodeType();
         if ($targetWorkspace->getName() !== 'live' || !$nodeType->isOfType('Neos.Neos:Document')) {
             return;
         }
 
-        $context = $this->contextFactory->create([
+        $liveContext = $this->contextFactory->create([
             'workspaceName' => 'live',
             'invisibleContentShown' => true,
-            'dimensions' => $node->getContext()->getDimensions()
+            'dimensions' => $publishedNode->getContext()->getDimensions()
         ]);
 
-        $targetNode = $context->getNodeByIdentifier($node->getIdentifier());
-        if ($targetNode === null) {
+        $liveNode = $liveContext->getNodeByIdentifier($publishedNode->getIdentifier());
+        if ($liveNode === null) {
             // The page has been added
             return;
         }
 
-        $targetNodeUriPath = $this->buildUriPathForNodeContextPath($targetNode->getContextPath());
-        if ($targetNodeUriPath === null) {
+        $liveNodeUriPath = $this->buildUriPathForNodeContextPath($liveNode);
+        if ($liveNodeUriPath === null) {
             throw new Exception('The target URI path of the node could not be resolved', 1451945358);
         }
 
-        $hosts = $this->getHostnames($node->getContext());
+        $hosts = $this->getHostnames($publishedNode->getContext());
 
         // The page has been removed
-        if ($node->isRemoved()) {
+        if ($publishedNode->isRemoved()) {
             // By default the redirect handling for removed nodes is activated.
             // If it is deactivated in your settings you will be able to handle the redirects on your own.
             // For example redirect to dedicated landing pages for deleted campaign NodeTypes
             if ($this->enableRemovedNodeRedirect) {
-                $this->flushRoutingCacheForNode($targetNode);
+                $this->flushRoutingCacheForNode($liveNode);
                 $statusCode = (integer)$this->defaultStatusCode['gone'];
-                $this->redirectStorage->addRedirect($targetNodeUriPath, '', $statusCode, $hosts);
+                $this->redirectStorage->addRedirect($liveNodeUriPath, '', $statusCode, $hosts);
             }
 
             return;
         }
 
+        // We need to reset the internal node cache to get a node with new path in the same request
+        $this->nodeFactory->reset();
+
         // compare the "old" node URI to the new one
-        $nodeUriPath = $this->buildUriPathForNodeContextPath($node->getContextPath());
+        $publishedNodeUriPath = $this->buildUriPathForNodeContextPath($publishedNode);
         // use the same regexp than the ContentContextBar Ember View
-        $nodeUriPath = preg_replace('/@[A-Za-z0-9;&,\-_=]+/', '', $nodeUriPath);
-        if ($nodeUriPath === null || $nodeUriPath === $targetNodeUriPath) {
+        $publishedNodeUriPath = preg_replace('/@[A-Za-z0-9;&,\-_=]+/', '', $publishedNodeUriPath);
+        if ($publishedNodeUriPath === null || $publishedNodeUriPath === $liveNodeUriPath) {
             // The page node path has not been changed
             return;
         }
 
-        $this->flushRoutingCacheForNode($targetNode);
+        $this->flushRoutingCacheForNode($liveNode);
         $statusCode = (integer)$this->defaultStatusCode['redirect'];
-        $this->redirectStorage->addRedirect($targetNodeUriPath, $nodeUriPath, $statusCode, $hosts);
+        $this->redirectStorage->addRedirect($liveNodeUriPath, $publishedNodeUriPath, $statusCode, $hosts);
 
-        $q = new FlowQuery([$node]);
-        foreach ($q->children('[instanceof Neos.Neos:Document]') as $childrenNode) {
-            $this->executeRedirectsForPublishedNode($childrenNode, $targetWorkspace);
+        foreach ($publishedNode->getChildNodes('Neos.Neos:Document') as $childNode) {
+            $this->executeRedirectsForPublishedNode($childNode, $targetWorkspace);
         }
     }
 
@@ -208,14 +211,15 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     /**
      * Creates a (relative) URI for the given $nodeContextPath removing the "@workspace-name" from the result
      *
-     * @param string $nodeContextPath
+     * @param NodeInterface $node
      * @return string the resulting (relative) URI or NULL if no route could be resolved
+     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    protected function buildUriPathForNodeContextPath($nodeContextPath)
+    protected function buildUriPathForNodeContextPath(NodeInterface $node)
     {
         try {
             return $this->getUriBuilder()
-                ->uriFor('show', ['node' => $nodeContextPath], 'Frontend\\Node', 'Neos.Neos');
+                ->uriFor('show', ['node' => $node], 'Frontend\\Node', 'Neos.Neos');
         } catch (NoMatchingRouteException $exception) {
             return null;
         }
