@@ -140,6 +140,7 @@ class NodeRedirectServiceTest extends FunctionalTestCase
     }
 
     /**
+     * @test
      * @throws \Neos\ContentRepository\Exception\NodeExistsException
      * @throws \Neos\ContentRepository\Exception\NodeTypeNotFoundException
      */
@@ -163,6 +164,7 @@ class NodeRedirectServiceTest extends FunctionalTestCase
     }
 
     /**
+     * @test
      * @throws \Neos\ContentRepository\Exception\NodeExistsException
      * @throws \Neos\ContentRepository\Exception\NodeTypeNotFoundException
      */
