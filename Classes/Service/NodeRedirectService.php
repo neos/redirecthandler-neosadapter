@@ -12,6 +12,7 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
  */
 
 use Neos\ContentRepository\Domain\Factory\NodeFactory;
+use Neos\Flow\Utility\Environment;
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Request;
@@ -89,6 +90,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @var array
      */
     protected $enableRemovedNodeRedirect;
+
+    /**
+     * @Flow\Inject
+     * @var Environment
+     */
+    protected $environment;
 
     /**
      * {@inheritdoc}
@@ -218,8 +225,16 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     protected function buildUriPathForNodeContextPath(NodeInterface $node)
     {
         try {
-            return $this->getUriBuilder()
-                ->uriFor('show', ['node' => $node], 'Frontend\\Node', 'Neos.Neos');
+            $uriBuilder = $this->getUriBuilder();
+            $uri = $uriBuilder->uriFor('show', ['node' => $node], 'Frontend\\Node', 'Neos.Neos');
+
+            $uriPathPrefix = $this->environment->isRewriteEnabled() ? '' : 'index.php/';
+            $uriPathPrefix = $uriBuilder->getRequest()->getHttpRequest()->getScriptRequestPath() . $uriPathPrefix;
+            if (strpos($uri, $uriPathPrefix) === 0) {
+                $uri = substr($uri, strlen($uriPathPrefix));
+            }
+
+            return $uri;
         } catch (NoMatchingRouteException $exception) {
             return null;
         }
