@@ -1,0 +1,7 @@
+Neos:
+  RedirectHandler:
+    NeosAdapter:
+      # By default the redirect handling for removed nodes is activated.
+      # If it is deactivated in your settings you will be able to handle the redirects on your own.
+      # For example redirect to dedicated landing pages for deleted campaign NodeTypes
+      enableRemovedNodeRedirect: true

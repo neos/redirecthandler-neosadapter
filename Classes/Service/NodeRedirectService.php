@@ -92,6 +92,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      */
     protected $contentDimensionCombinator;
 
+    /*
+     * @Flow\InjectConfiguration(path="enableRemovedNodeRedirect", package="Neos.RedirectHandler.NeosAdapter")
+     * @var array
+     */
+    protected $enableRemovedNodeRedirect;
+
     /**
      * {@inheritdoc}
      */
@@ -101,7 +107,6 @@ class NodeRedirectService implements NodeRedirectServiceInterface
         if ($targetWorkspace->getName() !== 'live' || !$nodeType->isOfType('TYPO3.Neos:Document')) {
             return;
         }
-
         $this->createRedirectsForNodesInDimensions($node, $targetWorkspace);
     }
 
@@ -148,13 +153,19 @@ class NodeRedirectService implements NodeRedirectServiceInterface
             throw new Exception('The target URI path of the node could not be resolved', 1451945358);
         }
 
-        $hosts = $this->getHostPatterns($node->getContext());
+        $hosts = $this->getHostnames($node->getContext());
 
         // The page has been removed
         if ($node->isRemoved()) {
-            $this->flushRoutingCacheForNode($targetNode);
-            $statusCode = (integer)$this->defaultStatusCode['gone'];
-            $this->redirectStorage->addRedirect($targetNodeUriPath, '', $statusCode, $hosts);
+            // By default the redirect handling for removed nodes is activated.
+            // If it is deactivated in your settings you will be able to handle the redirects on your own.
+            // For example redirect to dedicated landing pages for deleted campaign NodeTypes
+            if ($this->enableRemovedNodeRedirect) {
+                $this->flushRoutingCacheForNode($targetNode);
+                $statusCode = (integer)$this->defaultStatusCode['gone'];
+                $this->redirectStorage->addRedirect($targetNodeUriPath, '', $statusCode, $hosts);
+            }
+
             return;
         }
 
@@ -179,15 +190,17 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     }
 
     /**
+     * Collects all hostnames from the Domain entries attached to the current site.
+     *
      * @param ContentContext $contentContext
      * @return array
      */
-    protected function getHostPatterns(ContentContext $contentContext)
+    protected function getHostnames(ContentContext $contentContext)
     {
         $site = $contentContext->getCurrentSite();
         $domains = [];
         if ($site !== null) {
-            foreach ($site->getDomains() as $domain) {
+            foreach ($site->getActiveDomains() as $domain) {
                 /** @var Domain $domain */
                 $domains[] = $domain->getHostPattern();
             }
