@@ -11,11 +11,11 @@ namespace Neos\RedirectHandler\NeosAdapter\Tests\Behavior\Features\Bootstrap;
  * source code.
  */
 
-use PHPUnit_Framework_Assert as Assert;
-use TYPO3\Flow\Http\Request;
+use Neos\Flow\Http\Request;
 use Neos\RedirectHandler\DatabaseStorage\Domain\Repository\RedirectRepository;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
 use Neos\RedirectHandler\DatabaseStorage\RedirectStorage;
+use PHPUnit\Framework\Assert;
 
 trait RedirectOperationTrait
 {
