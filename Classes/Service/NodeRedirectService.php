@@ -131,13 +131,13 @@ class NodeRedirectService implements NodeRedirectServiceInterface
             return;
         }
 
-        if ($this->isNodeTypeDisabled($publishedNode) || $this->isPathDisabled($publishedNode)) {
-            return;
-        }
-
         $liveNode = $this->getLiveNode($publishedNode);
         if ($liveNode === null) {
             // The page has been added
+            return;
+        }
+
+        if ($this->isNodeTypeDisabled($liveNode) || $this->isPathDisabled($liveNode)) {
             return;
         }
 
