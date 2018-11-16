@@ -23,12 +23,12 @@ use TYPO3\Flow\Mvc\Routing\UriBuilder;
 use TYPO3\Flow\Persistence\PersistenceManagerInterface;
 use TYPO3\Neos\Domain\Model\Domain;
 use TYPO3\Neos\Domain\Service\ContentContext;
-use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
 use TYPO3\Neos\Routing\Exception;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
 use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
+use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
 
 /**
  * Service that creates redirects for moved / deleted nodes.
@@ -92,7 +92,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      */
     protected $contentDimensionCombinator;
 
-    /*
+    /**
      * @Flow\InjectConfiguration(path="enableRemovedNodeRedirect", package="Neos.RedirectHandler.NeosAdapter")
      * @var array
      */
@@ -134,8 +134,8 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @param NodeInterface $node
      * @param Workspace $targetWorkspace
      */
-    protected function createRedirect(NodeInterface $node, Workspace $targetWorkspace) {
-
+    protected function createRedirect(NodeInterface $node, Workspace $targetWorkspace)
+    {
         $context = $this->contextFactory->create([
             'workspaceName' => 'live',
             'invisibleContentShown' => true,
