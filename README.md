@@ -26,3 +26,25 @@ webserver directly:
 For the redirect handler to even see the request, this has to be removed. Usually the performance impact
 can be neglected, since Flow is only hit for resources that once existed and to which someone still holds
 a link.
+
+### Restrict generation
+It is possible to restrict the generation of redirects to a certain node path or node type. For instance, you can user 
+in an multi site environment or avoid massive redirect generation if you don't need it.
+
+#### restrictByNodeType
+Restrict redirect generation by node type.  
+```
+restrictByNodeType:
+  Neos.Neos:Document: true
+```
+
+#### restrictByPathPrefix
+Restrict redirect generation by node path prefix.
+
+**Note**: No redirect will be created if you move a node within the restricted path or if you move it away from the 
+restricted path. But if you move a node into the restricted path the restriction rule will not apply, because the 
+restriction is based on the source node path.
+```
+restrictByPathPrefix:
+  - '/sites/neosdemo': true
+```  

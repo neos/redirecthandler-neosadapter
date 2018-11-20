@@ -91,6 +91,18 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     protected $enableRemovedNodeRedirect;
 
     /**
+     * @Flow\InjectConfiguration(path="restrictByPathPrefix", package="Neos.RedirectHandler.NeosAdapter")
+     * @var array
+     */
+    protected $restrictByPathPrefix;
+
+    /**
+     * @Flow\InjectConfiguration(path="restrictByNodeType", package="Neos.RedirectHandler.NeosAdapter")
+     * @var array
+     */
+    protected $restrictByNodeType;
+
+    /**
      * {@inheritdoc}
      */
     public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
@@ -119,15 +131,13 @@ class NodeRedirectService implements NodeRedirectServiceInterface
             return;
         }
 
-        $liveContext = $this->contextFactory->create([
-            'workspaceName' => 'live',
-            'invisibleContentShown' => true,
-            'dimensions' => $publishedNode->getContext()->getDimensions()
-        ]);
-
-        $liveNode = $liveContext->getNodeByIdentifier($publishedNode->getIdentifier());
+        $liveNode = $this->getLiveNode($publishedNode);
         if ($liveNode === null) {
             // The page has been added
+            return;
+        }
+
+        if ($this->isRestrictedByNodeType($liveNode) || $this->isRestrictedByPath($liveNode)) {
             return;
         }
 
@@ -171,6 +181,80 @@ class NodeRedirectService implements NodeRedirectServiceInterface
         foreach ($publishedNode->getChildNodes('Neos.Neos:Document') as $childNode) {
             $this->executeRedirectsForPublishedNode($childNode, $targetWorkspace);
         }
+    }
+
+    /**
+     * @param NodeInterface $publishedNode
+     * @return NodeInterface|null
+     */
+    protected function getLiveNode(NodeInterface $publishedNode): ?NodeInterface
+    {
+        $liveContext = $this->contextFactory->create([
+            'workspaceName' => 'live',
+            'invisibleContentShown' => true,
+            'dimensions' => $publishedNode->getContext()->getDimensions()
+        ]);
+
+        return $liveContext->getNodeByIdentifier($publishedNode->getIdentifier());
+    }
+
+    /**
+     * Check if the current node type is restricted by Settings
+     *
+     * @param NodeInterface $publishedNode
+     * @return bool
+     */
+    protected function isRestrictedByNodeType(NodeInterface $publishedNode)
+    {
+        if (!isset($this->restrictByNodeType)) {
+            return false;
+        }
+
+        foreach ($this->restrictByNodeType as $disabledNodeType => $status) {
+            if ($status !== true) {
+                continue;
+            }
+            if ($publishedNode->getNodeType()->isOfType($disabledNodeType)) {
+                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
+                    $publishedNode->getNodeType()->getName(),
+                    $publishedNode->getContextPath(),
+                    $disabledNodeType
+                ]), LOG_DEBUG, null, 'RedirectHandler');
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the current node path is restricted by Settings
+     *
+     * @param NodeInterface $publishedNode
+     * @return bool
+     */
+    protected function isRestrictedByPath(NodeInterface $publishedNode)
+    {
+        if (!isset($this->restrictByPathPrefix)) {
+            return false;
+        }
+
+        foreach ($this->restrictByPathPrefix as $pathPrefix => $status) {
+            if ($status !== true) {
+                continue;
+            }
+            $pathPrefix = rtrim($pathPrefix, '/') . '/';
+            if (mb_strpos($publishedNode->getPath(), $pathPrefix) === 0) {
+                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node path (%s) for node %s because prefix matches %s', [
+                    $publishedNode->getPath(),
+                    $publishedNode->getContextPath(),
+                    $pathPrefix
+                ]), LOG_DEBUG, null, 'RedirectHandler');
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

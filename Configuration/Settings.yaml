@@ -5,3 +5,9 @@ Neos:
       # If it is deactivated in your settings you will be able to handle the redirects on your own.
       # For example redirect to dedicated landing pages for deleted campaign NodeTypes
       enableRemovedNodeRedirect: true
+
+      pathPrefixConfiguration: []
+      #  '/sites/neosdemo/': false
+
+      nodeTypeConfiguration:
+        Neos.Neos:Document: true
