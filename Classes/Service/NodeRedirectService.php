@@ -91,16 +91,16 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     protected $enableRemovedNodeRedirect;
 
     /**
-     * @Flow\InjectConfiguration(path="pathPrefixConfiguration", package="Neos.RedirectHandler.NeosAdapter")
+     * @Flow\InjectConfiguration(path="restrictByPathPrefix", package="Neos.RedirectHandler.NeosAdapter")
      * @var array
      */
-    protected $pathPrefixConfiguration;
+    protected $restrictByPathPrefix;
 
     /**
-     * @Flow\InjectConfiguration(path="nodeTypeConfiguration", package="Neos.RedirectHandler.NeosAdapter")
+     * @Flow\InjectConfiguration(path="restrictByNodeType", package="Neos.RedirectHandler.NeosAdapter")
      * @var array
      */
-    protected $nodeTypeConfiguration;
+    protected $restrictByNodeType;
 
     /**
      * {@inheritdoc}
@@ -137,7 +137,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
             return;
         }
 
-        if ($this->isNodeTypeDisabled($liveNode) || $this->isPathDisabled($liveNode)) {
+        if ($this->isRestrictedByNodeType($liveNode) || $this->isRestrictedByPath($liveNode)) {
             return;
         }
 
@@ -199,51 +199,57 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     }
 
     /**
-     * Check if the current node type is disable by Settings
+     * Check if the current node type is restricted by Settings
      *
      * @param NodeInterface $publishedNode
      * @return bool
      */
-    protected function isNodeTypeDisabled(NodeInterface $publishedNode)
+    protected function isRestrictedByNodeType(NodeInterface $publishedNode)
     {
-        foreach ($this->nodeTypeConfiguration as $disabledNodeType => $status) {
-            if ($status === true) {
-                continue;
-            }
-            if ($publishedNode->getNodeType()->isOfType($disabledNodeType)) {
-                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
-                    $publishedNode->getNodeType()->getName(),
-                    $publishedNode->getContextPath(),
-                    $disabledNodeType
-                ]), LOG_DEBUG, null, 'RedirectHandler');
-                return true;
+        if (isset($this->restrictByNodeType)) {
+            foreach ($this->restrictByNodeType as $disabledNodeType => $status) {
+                if ($status !== true) {
+                    continue;
+                }
+                if ($publishedNode->getNodeType()->isOfType($disabledNodeType)) {
+                    $this->systemLogger->log(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
+                        $publishedNode->getNodeType()->getName(),
+                        $publishedNode->getContextPath(),
+                        $disabledNodeType
+                    ]), LOG_DEBUG, null, 'RedirectHandler');
+                    return true;
+                }
             }
         }
+
         return false;
     }
 
     /**
-     * Check if the current node path is disable by Settings
+     * Check if the current node path is restricted by Settings
      *
      * @param NodeInterface $publishedNode
      * @return bool
      */
-    protected function isPathDisabled(NodeInterface $publishedNode)
+    protected function isRestrictedByPath(NodeInterface $publishedNode)
     {
-        foreach ($this->pathPrefixConfiguration as $pathPrefix => $status) {
-            if ($status !== false) {
-                continue;
-            }
-            $pathPrefix = rtrim($pathPrefix, '/') . '/';
-            if (mb_strpos($publishedNode->getPath(), $pathPrefix) === 0) {
-                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node path (%s) for node %s because prefix matches %s', [
-                    $publishedNode->getPath(),
-                    $publishedNode->getContextPath(),
-                    $pathPrefix
-                ]), LOG_DEBUG, null, 'RedirectHandler');
-                return true;
+        if (isset($this->restrictByPathPrefix)) {
+            foreach ($this->restrictByPathPrefix as $pathPrefix => $status) {
+                if ($status !== true) {
+                    continue;
+                }
+                $pathPrefix = rtrim($pathPrefix, '/') . '/';
+                if (mb_strpos($publishedNode->getPath(), $pathPrefix) === 0) {
+                    $this->systemLogger->log(vsprintf('Redirect skipped based on the current node path (%s) for node %s because prefix matches %s', [
+                        $publishedNode->getPath(),
+                        $publishedNode->getContextPath(),
+                        $pathPrefix
+                    ]), LOG_DEBUG, null, 'RedirectHandler');
+                    return true;
+                }
             }
         }
+
         return false;
     }
 
