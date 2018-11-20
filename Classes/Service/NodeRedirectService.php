@@ -206,19 +206,21 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      */
     protected function isRestrictedByNodeType(NodeInterface $publishedNode)
     {
-        if (isset($this->restrictByNodeType)) {
-            foreach ($this->restrictByNodeType as $disabledNodeType => $status) {
-                if ($status !== true) {
-                    continue;
-                }
-                if ($publishedNode->getNodeType()->isOfType($disabledNodeType)) {
-                    $this->systemLogger->log(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
-                        $publishedNode->getNodeType()->getName(),
-                        $publishedNode->getContextPath(),
-                        $disabledNodeType
-                    ]), LOG_DEBUG, null, 'RedirectHandler');
-                    return true;
-                }
+        if (!isset($this->restrictByNodeType)) {
+            return false;
+        }
+
+        foreach ($this->restrictByNodeType as $disabledNodeType => $status) {
+            if ($status !== true) {
+                continue;
+            }
+            if ($publishedNode->getNodeType()->isOfType($disabledNodeType)) {
+                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
+                    $publishedNode->getNodeType()->getName(),
+                    $publishedNode->getContextPath(),
+                    $disabledNodeType
+                ]), LOG_DEBUG, null, 'RedirectHandler');
+                return true;
             }
         }
 
@@ -233,20 +235,22 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      */
     protected function isRestrictedByPath(NodeInterface $publishedNode)
     {
-        if (isset($this->restrictByPathPrefix)) {
-            foreach ($this->restrictByPathPrefix as $pathPrefix => $status) {
-                if ($status !== true) {
-                    continue;
-                }
-                $pathPrefix = rtrim($pathPrefix, '/') . '/';
-                if (mb_strpos($publishedNode->getPath(), $pathPrefix) === 0) {
-                    $this->systemLogger->log(vsprintf('Redirect skipped based on the current node path (%s) for node %s because prefix matches %s', [
-                        $publishedNode->getPath(),
-                        $publishedNode->getContextPath(),
-                        $pathPrefix
-                    ]), LOG_DEBUG, null, 'RedirectHandler');
-                    return true;
-                }
+        if (!isset($this->restrictByPathPrefix)) {
+            return false;
+        }
+
+        foreach ($this->restrictByPathPrefix as $pathPrefix => $status) {
+            if ($status !== true) {
+                continue;
+            }
+            $pathPrefix = rtrim($pathPrefix, '/') . '/';
+            if (mb_strpos($publishedNode->getPath(), $pathPrefix) === 0) {
+                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node path (%s) for node %s because prefix matches %s', [
+                    $publishedNode->getPath(),
+                    $publishedNode->getContextPath(),
+                    $pathPrefix
+                ]), LOG_DEBUG, null, 'RedirectHandler');
+                return true;
             }
         }
 
