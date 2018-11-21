@@ -187,7 +187,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @param NodeInterface $publishedNode
      * @return NodeInterface|null
      */
-    protected function getLiveNode(NodeInterface $publishedNode): ?NodeInterface
+    protected function getLiveNode(NodeInterface $publishedNode)
     {
         $liveContext = $this->contextFactory->create([
             'workspaceName' => 'live',
