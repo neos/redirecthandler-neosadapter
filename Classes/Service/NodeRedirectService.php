@@ -18,6 +18,7 @@ use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Request;
+use Neos\Flow\Log\SystemLoggerInterface;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Mvc\Routing\RouterCachingService;
 use Neos\Flow\Mvc\Routing\UriBuilder;
@@ -72,6 +73,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     protected $nodeFactory;
 
     /**
+     * @Flow\Inject
+     * @var SystemLoggerInterface
+     */
+    protected $systemLogger;
+
+    /**
      * @Flow\InjectConfiguration(path="statusCode", package="Neos.RedirectHandler")
      * @var array
      */
@@ -88,6 +95,18 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @var array
      */
     protected $enableRemovedNodeRedirect;
+
+    /**
+     * @Flow\InjectConfiguration(path="restrictByPathPrefix", package="Neos.RedirectHandler.NeosAdapter")
+     * @var array
+     */
+    protected $restrictByPathPrefix;
+
+    /**
+     * @Flow\InjectConfiguration(path="restrictByNodeType", package="Neos.RedirectHandler.NeosAdapter")
+     * @var array
+     */
+    protected $restrictByNodeType;
 
     /**
      * Creates a redirect for the node if it is a 'Neos.Neos:Document' node and its URI has changed
@@ -139,15 +158,13 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      */
     protected function createRedirect(NodeInterface $node, Workspace $targetWorkspace): void
     {
-        $context = $this->contextFactory->create([
-            'workspaceName' => $targetWorkspace->getName(),
-            'invisibleContentShown' => true,
-            'dimensions' => $node->getContext()->getDimensions()
-        ]);
-
-        $targetNode = $context->getNodeByIdentifier($node->getIdentifier());
+        $targetNode = $this->getTargetNode($node, $targetWorkspace);
         if ($targetNode === null) {
-            // The node has been added or is not available in live context for the given dimension
+            // The node has been added or is not available in target context for the given dimension
+            return;
+        }
+
+        if ($this->isRestrictedByNodeType($targetNode) || $this->isRestrictedByPath($targetNode)) {
             return;
         }
 
@@ -188,6 +205,81 @@ class NodeRedirectService implements NodeRedirectServiceInterface
         foreach ($node->getChildNodes('Neos.Neos:Document') as $childNode) {
             $this->createRedirect($childNode, $targetWorkspace);
         }
+    }
+
+    /**
+     * @param NodeInterface $node
+     * @param Workspace $targetWorkspace
+     * @return NodeInterface|null
+     */
+    protected function getTargetNode(NodeInterface $node, Workspace $targetWorkspace)
+    {
+        $context = $this->contextFactory->create([
+            'workspaceName' => $targetWorkspace->getName(),
+            'invisibleContentShown' => true,
+            'dimensions' => $node->getContext()->getDimensions()
+        ]);
+
+        return $context->getNodeByIdentifier($node->getIdentifier());
+    }
+
+    /**
+     * Check if the current node type is restricted by Settings
+     *
+     * @param NodeInterface $node
+     * @return bool
+     */
+    protected function isRestrictedByNodeType(NodeInterface $node): bool
+    {
+        if (!isset($this->restrictByNodeType)) {
+            return false;
+        }
+
+        foreach ($this->restrictByNodeType as $disabledNodeType => $status) {
+            if ($status !== true) {
+                continue;
+            }
+            if ($node->getNodeType()->isOfType($disabledNodeType)) {
+                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
+                    $node->getNodeType()->getName(),
+                    $node->getContextPath(),
+                    $disabledNodeType
+                ]), LOG_DEBUG, null, 'RedirectHandler');
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the current node path is restricted by Settings
+     *
+     * @param NodeInterface $node
+     * @return bool
+     */
+    protected function isRestrictedByPath(NodeInterface $node): bool
+    {
+        if (!isset($this->restrictByPathPrefix)) {
+            return false;
+        }
+
+        foreach ($this->restrictByPathPrefix as $pathPrefix => $status) {
+            if ($status !== true) {
+                continue;
+            }
+            $pathPrefix = rtrim($pathPrefix, '/') . '/';
+            if (mb_strpos($node->getPath(), $pathPrefix) === 0) {
+                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node path (%s) for node %s because prefix matches %s', [
+                    $node->getPath(),
+                    $node->getContextPath(),
+                    $pathPrefix
+                ]), LOG_DEBUG, null, 'RedirectHandler');
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
