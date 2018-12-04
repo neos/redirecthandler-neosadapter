@@ -12,21 +12,21 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
  */
 
 use Neos\ContentRepository\Domain\Factory\NodeFactory;
-use Neos\RedirectHandler\Storage\RedirectStorageInterface;
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Request;
 use Neos\Flow\Log\SystemLoggerInterface;
 use Neos\Flow\Mvc\ActionRequest;
-use Neos\Flow\Mvc\Exception\NoMatchingRouteException;
 use Neos\Flow\Mvc\Routing\RouterCachingService;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
 use Neos\Neos\Domain\Model\Domain;
 use Neos\Neos\Domain\Service\ContentContext;
-use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Neos\Routing\Exception;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\RedirectHandler\Storage\RedirectStorageInterface;
 
 /**
  * Service that creates redirects for moved / deleted nodes.
@@ -85,6 +85,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     protected $defaultStatusCode;
 
     /**
+     * @Flow\Inject
+     * @var ContentDimensionCombinator
+     */
+    protected $contentDimensionCombinator;
+
+    /**
      * @Flow\InjectConfiguration(path="enableRemovedNodeRedirect", package="Neos.RedirectHandler.NeosAdapter")
      * @var array
      */
@@ -103,60 +109,77 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     protected $restrictByNodeType;
 
     /**
-     * {@inheritdoc}
+     * Creates a redirect for the node if it is a 'Neos.Neos:Document' node and its URI has changed
+     *
+     * @param NodeInterface $node The node that is about to be published
+     * @param Workspace $targetWorkspace
+     * @return void
+     * @throws Exception
+     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
+    public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace): void
     {
-        try {
-            $this->executeRedirectsForPublishedNode($node, $targetWorkspace);
-        } catch (\Exception $exception) {
-            $this->systemLogger->log(sprintf('Can not create redirect for the node = %s in workspace = %s. See original exception: "%s"', $node->getContextPath(), $targetWorkspace->getName(), $exception->getMessage()), LOG_WARNING);
+        $nodeType = $node->getNodeType();
+        if ($targetWorkspace->isPublicWorkspace() === false || $nodeType->isOfType('Neos.Neos:Document') === false) {
+            return;
+        }
+        $this->createRedirectsForNodesInDimensions($node, $targetWorkspace);
+    }
+
+    /**
+     * Cycle dimensions and create redirects if necessary.
+     *
+     * @param NodeInterface $node
+     * @param Workspace $targetWorkspace
+     * @return void
+     * @throws Exception
+     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     */
+    protected function createRedirectsForNodesInDimensions(NodeInterface $node, Workspace $targetWorkspace): void
+    {
+        foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $allowedCombination) {
+            $nodeInDimensions = $this->getNodeInDimensions($node, $allowedCombination);
+            if ($nodeInDimensions === null) {
+                continue;
+            }
+
+            $this->createRedirect($nodeInDimensions, $targetWorkspace);
         }
     }
 
     /**
-     * Creates a redirect for the node if it is a 'Neos.Neos:Document' node and its URI has changed
+     * Creates the actual redirect for the given node and possible children.
      *
-     * @param NodeInterface $publishedNode The node that is about to be published
+     * @param NodeInterface $node
      * @param Workspace $targetWorkspace
      * @return void
      * @throws Exception
-     * @throws \Neos\Eel\Exception
      * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    protected function executeRedirectsForPublishedNode(NodeInterface $publishedNode, Workspace $targetWorkspace)
+    protected function createRedirect(NodeInterface $node, Workspace $targetWorkspace): void
     {
-        $nodeType = $publishedNode->getNodeType();
-        if ($targetWorkspace->getName() !== 'live' || !$nodeType->isOfType('Neos.Neos:Document')) {
+        $targetNode = $this->getTargetNode($node, $targetWorkspace);
+        if ($targetNode === null) {
+            // The node has been added or is not available in target context for the given dimension
             return;
         }
 
-        $liveNode = $this->getLiveNode($publishedNode);
-        if ($liveNode === null) {
-            // The page has been added
+        if ($this->isRestrictedByNodeType($targetNode) || $this->isRestrictedByPath($targetNode)) {
             return;
         }
 
-        if ($this->isRestrictedByNodeType($liveNode) || $this->isRestrictedByPath($liveNode)) {
-            return;
-        }
-
-        $liveNodeUriPath = $this->buildUriPathForNodeContextPath($liveNode);
-        if ($liveNodeUriPath === null) {
-            throw new Exception('The target URI path of the node could not be resolved', 1451945358);
-        }
-
-        $hosts = $this->getHostnames($publishedNode->getContext());
+        $targetNodeUriPath = $this->buildUriPathForNode($targetNode);
+        $hosts = $this->getHostnames($node->getContext());
 
         // The page has been removed
-        if ($publishedNode->isRemoved()) {
+        if ($node->isRemoved()) {
             // By default the redirect handling for removed nodes is activated.
             // If it is deactivated in your settings you will be able to handle the redirects on your own.
             // For example redirect to dedicated landing pages for deleted campaign NodeTypes
             if ($this->enableRemovedNodeRedirect) {
-                $this->flushRoutingCacheForNode($liveNode);
+                $this->flushRoutingCacheForNode($targetNode);
                 $statusCode = (integer)$this->defaultStatusCode['gone'];
-                $this->redirectStorage->addRedirect($liveNodeUriPath, '', $statusCode, $hosts);
+                $this->redirectStorage->addRedirect($targetNodeUriPath, '', $statusCode, $hosts);
             }
 
             return;
@@ -166,45 +189,47 @@ class NodeRedirectService implements NodeRedirectServiceInterface
         $this->nodeFactory->reset();
 
         // compare the "old" node URI to the new one
-        $publishedNodeUriPath = $this->buildUriPathForNodeContextPath($publishedNode);
+        $nodeUriPath = $this->buildUriPathForNode($node);
         // use the same regexp than the ContentContextBar Ember View
-        $publishedNodeUriPath = preg_replace('/@[A-Za-z0-9;&,\-_=]+/', '', $publishedNodeUriPath);
-        if ($publishedNodeUriPath === null || $publishedNodeUriPath === $liveNodeUriPath) {
-            // The page node path has not been changed
+        $nodeUriPath = preg_replace('/@[A-Za-z0-9;&,\-_=]+/', '', $nodeUriPath);
+        if ($nodeUriPath === $targetNodeUriPath) {
+            // The page URI path has not been changed
             return;
         }
 
-        $this->flushRoutingCacheForNode($liveNode);
+        $this->flushRoutingCacheForNode($targetNode);
         $statusCode = (integer)$this->defaultStatusCode['redirect'];
-        $this->redirectStorage->addRedirect($liveNodeUriPath, $publishedNodeUriPath, $statusCode, $hosts);
 
-        foreach ($publishedNode->getChildNodes('Neos.Neos:Document') as $childNode) {
-            $this->executeRedirectsForPublishedNode($childNode, $targetWorkspace);
+        $this->redirectStorage->addRedirect($targetNodeUriPath, $nodeUriPath, $statusCode, $hosts);
+
+        foreach ($node->getChildNodes('Neos.Neos:Document') as $childNode) {
+            $this->createRedirect($childNode, $targetWorkspace);
         }
     }
 
     /**
-     * @param NodeInterface $publishedNode
+     * @param NodeInterface $node
+     * @param Workspace $targetWorkspace
      * @return NodeInterface|null
      */
-    protected function getLiveNode(NodeInterface $publishedNode)
+    protected function getTargetNode(NodeInterface $node, Workspace $targetWorkspace)
     {
-        $liveContext = $this->contextFactory->create([
-            'workspaceName' => 'live',
+        $context = $this->contextFactory->create([
+            'workspaceName' => $targetWorkspace->getName(),
             'invisibleContentShown' => true,
-            'dimensions' => $publishedNode->getContext()->getDimensions()
+            'dimensions' => $node->getContext()->getDimensions()
         ]);
 
-        return $liveContext->getNodeByIdentifier($publishedNode->getIdentifier());
+        return $context->getNodeByIdentifier($node->getIdentifier());
     }
 
     /**
      * Check if the current node type is restricted by Settings
      *
-     * @param NodeInterface $publishedNode
+     * @param NodeInterface $node
      * @return bool
      */
-    protected function isRestrictedByNodeType(NodeInterface $publishedNode)
+    protected function isRestrictedByNodeType(NodeInterface $node): bool
     {
         if (!isset($this->restrictByNodeType)) {
             return false;
@@ -214,10 +239,10 @@ class NodeRedirectService implements NodeRedirectServiceInterface
             if ($status !== true) {
                 continue;
             }
-            if ($publishedNode->getNodeType()->isOfType($disabledNodeType)) {
+            if ($node->getNodeType()->isOfType($disabledNodeType)) {
                 $this->systemLogger->log(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
-                    $publishedNode->getNodeType()->getName(),
-                    $publishedNode->getContextPath(),
+                    $node->getNodeType()->getName(),
+                    $node->getContextPath(),
                     $disabledNodeType
                 ]), LOG_DEBUG, null, 'RedirectHandler');
                 return true;
@@ -230,10 +255,10 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     /**
      * Check if the current node path is restricted by Settings
      *
-     * @param NodeInterface $publishedNode
+     * @param NodeInterface $node
      * @return bool
      */
-    protected function isRestrictedByPath(NodeInterface $publishedNode)
+    protected function isRestrictedByPath(NodeInterface $node): bool
     {
         if (!isset($this->restrictByPathPrefix)) {
             return false;
@@ -244,10 +269,10 @@ class NodeRedirectService implements NodeRedirectServiceInterface
                 continue;
             }
             $pathPrefix = rtrim($pathPrefix, '/') . '/';
-            if (mb_strpos($publishedNode->getPath(), $pathPrefix) === 0) {
+            if (mb_strpos($node->getPath(), $pathPrefix) === 0) {
                 $this->systemLogger->log(vsprintf('Redirect skipped based on the current node path (%s) for node %s because prefix matches %s', [
-                    $publishedNode->getPath(),
-                    $publishedNode->getContextPath(),
+                    $node->getPath(),
+                    $node->getContextPath(),
                     $pathPrefix
                 ]), LOG_DEBUG, null, 'RedirectHandler');
                 return true;
@@ -263,7 +288,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @param ContentContext $contentContext
      * @return array
      */
-    protected function getHostnames(ContentContext $contentContext)
+    protected function getHostnames(ContentContext $contentContext): array
     {
         $site = $contentContext->getCurrentSite();
         $domains = [];
@@ -282,7 +307,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @param NodeInterface $node
      * @return void
      */
-    protected function flushRoutingCacheForNode(NodeInterface $node)
+    protected function flushRoutingCacheForNode(NodeInterface $node): void
     {
         $nodeData = $node->getNodeData();
         $nodeDataIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
@@ -296,17 +321,13 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * Creates a (relative) URI for the given $nodeContextPath removing the "@workspace-name" from the result
      *
      * @param NodeInterface $node
-     * @return string the resulting (relative) URI or NULL if no route could be resolved
+     * @return string the resulting (relative) URI
      * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    protected function buildUriPathForNodeContextPath(NodeInterface $node)
+    protected function buildUriPathForNode(NodeInterface $node): string
     {
-        try {
-            return $this->getUriBuilder()
-                ->uriFor('show', ['node' => $node], 'Frontend\\Node', 'Neos.Neos');
-        } catch (NoMatchingRouteException $exception) {
-            return null;
-        }
+        return $this->getUriBuilder()
+            ->uriFor('show', ['node' => $node], 'Frontend\\Node', 'Neos.Neos');
     }
 
     /**
@@ -314,7 +335,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      *
      * @return UriBuilder
      */
-    protected function getUriBuilder()
+    protected function getUriBuilder(): UriBuilder
     {
         if ($this->uriBuilder === null) {
             $httpRequest = Request::createFromEnvironment();
@@ -326,6 +347,26 @@ class NodeRedirectService implements NodeRedirectServiceInterface
                 ->setFormat('html')
                 ->setCreateAbsoluteUri(false);
         }
+
         return $this->uriBuilder;
+    }
+
+    /**
+     * Get the given node in the given dimensions.
+     * If it doesn't exist the method returns null.
+     *
+     * @param NodeInterface $node
+     * @param array $dimensions
+     * @return NodeInterface|null
+     */
+    protected function getNodeInDimensions(NodeInterface $node, array $dimensions)
+    {
+        $context = $this->contextFactory->create([
+            'workspaceName' => $node->getWorkspace()->getName(),
+            'dimensions' => $dimensions,
+            'invisibleContentShown' => true,
+        ]);
+
+        return $context->getNode($node->getPath());
     }
 }
