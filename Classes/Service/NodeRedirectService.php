@@ -23,11 +23,12 @@ use TYPO3\Flow\Mvc\Routing\UriBuilder;
 use TYPO3\Flow\Persistence\PersistenceManagerInterface;
 use TYPO3\Neos\Domain\Model\Domain;
 use TYPO3\Neos\Domain\Service\ContentContext;
-use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
 use TYPO3\Neos\Routing\Exception;
 use TYPO3\TYPO3CR\Domain\Model\NodeInterface;
 use TYPO3\TYPO3CR\Domain\Model\Workspace;
 use TYPO3\TYPO3CR\Domain\Repository\NodeDataRepository;
+use TYPO3\TYPO3CR\Domain\Service\ContentDimensionCombinator;
+use TYPO3\TYPO3CR\Domain\Service\ContextFactoryInterface;
 
 /**
  * Service that creates redirects for moved / deleted nodes.
@@ -86,6 +87,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
     protected $defaultStatusCode;
 
     /**
+     * @Flow\Inject
+     * @var ContentDimensionCombinator
+     */
+    protected $contentDimensionCombinator;
+
+    /**
      * @Flow\InjectConfiguration(path="enableRemovedNodeRedirect", package="Neos.RedirectHandler.NeosAdapter")
      * @var array
      */
@@ -96,28 +103,39 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      */
     public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
     {
-        try {
-            $this->executeRedirectsForPublishedNode($node, $targetWorkspace);
-        } catch (\Exception $exception) {
-            $this->systemLogger->log(sprintf('Can not create redirect for the node = %s in workspace = %s. See original exception: "%s"', $node->getContextPath(), $targetWorkspace->getName(), $exception->getMessage()), LOG_WARNING);
-        }
-    }
-
-    /**
-     * Creates a redirect for the node if it is a 'TYPO3.Neos:Document' node and its URI has changed
-     *
-     * @param NodeInterface $node The node that is about to be published
-     * @param Workspace $targetWorkspace
-     * @return void
-     * @throws Exception
-     */
-    protected function executeRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
-    {
         $nodeType = $node->getNodeType();
         if ($targetWorkspace->getName() !== 'live' || !$nodeType->isOfType('TYPO3.Neos:Document')) {
             return;
         }
+        $this->createRedirectsForNodesInDimensions($node, $targetWorkspace);
+    }
 
+    /**
+     * Cycle dimensions and create redirects if necessary.
+     *
+     * @param $node
+     * @param $targetWorkspace
+     */
+    protected function createRedirectsForNodesInDimensions(NodeInterface $node, Workspace $targetWorkspace)
+    {
+        foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $allowedCombination) {
+            $nodeInDimensions = $this->getNodeInDimensions($node, $allowedCombination);
+            if ($nodeInDimensions === null) {
+                continue;
+            }
+
+            $this->createRedirect($nodeInDimensions, $targetWorkspace);
+        }
+    }
+
+    /**
+     * Creates the actual redirect for the given node and possible children.
+     *
+     * @param NodeInterface $node
+     * @param Workspace $targetWorkspace
+     */
+    protected function createRedirect(NodeInterface $node, Workspace $targetWorkspace)
+    {
         $context = $this->contextFactory->create([
             'workspaceName' => 'live',
             'invisibleContentShown' => true,
@@ -126,7 +144,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
 
         $targetNode = $context->getNodeByIdentifier($node->getIdentifier());
         if ($targetNode === null) {
-            // The page has been added
+            // The page has been added or is not available in live context for the given dimension
             return;
         }
 
@@ -162,11 +180,12 @@ class NodeRedirectService implements NodeRedirectServiceInterface
 
         $this->flushRoutingCacheForNode($targetNode);
         $statusCode = (integer)$this->defaultStatusCode['redirect'];
+
         $this->redirectStorage->addRedirect($targetNodeUriPath, $nodeUriPath, $statusCode, $hosts);
 
         $q = new FlowQuery([$node]);
         foreach ($q->children('[instanceof TYPO3.Neos:Document]') as $childrenNode) {
-            $this->executeRedirectsForPublishedNode($childrenNode, $targetWorkspace);
+            $this->createRedirect($childrenNode, $targetWorkspace);
         }
     }
 
@@ -239,5 +258,23 @@ class NodeRedirectService implements NodeRedirectServiceInterface
                 ->setCreateAbsoluteUri(false);
         }
         return $this->uriBuilder;
+    }
+
+    /**
+     * Get the given node in the given dimensions.
+     * If it doesn't exist the method returns null.
+     *
+     * @param NodeInterface $node
+     * @param array $dimensions
+     * @return NodeInterface|null
+     */
+    protected function getNodeInDimensions(NodeInterface $node, array $dimensions)
+    {
+        $context = $this->contextFactory->create([
+            'workspaceName' => $node->getWorkspace()->getName(),
+            'dimensions' => $dimensions,
+            'invisibleContentShown' => true,
+        ]);
+        return $context->getNode($node->getPath());
     }
 }
