@@ -117,7 +117,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @throws Exception
      * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace): void
+    public function createRedirectsForPublishedNode(NodeInterface $node, Workspace $targetWorkspace)
     {
         $nodeType = $node->getNodeType();
         if ($targetWorkspace->isPublicWorkspace() === false || $nodeType->isOfType('Neos.Neos:Document') === false) {
@@ -135,7 +135,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @throws Exception
      * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    protected function createRedirectsForNodesInDimensions(NodeInterface $node, Workspace $targetWorkspace): void
+    protected function createRedirectsForNodesInDimensions(NodeInterface $node, Workspace $targetWorkspace)
     {
         foreach ($this->contentDimensionCombinator->getAllAllowedCombinations() as $allowedCombination) {
             $nodeInDimensions = $this->getNodeInDimensions($node, $allowedCombination);
@@ -156,7 +156,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @throws Exception
      * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    protected function createRedirect(NodeInterface $node, Workspace $targetWorkspace): void
+    protected function createRedirect(NodeInterface $node, Workspace $targetWorkspace)
     {
         $targetNode = $this->getTargetNode($node, $targetWorkspace);
         if ($targetNode === null) {
@@ -307,7 +307,7 @@ class NodeRedirectService implements NodeRedirectServiceInterface
      * @param NodeInterface $node
      * @return void
      */
-    protected function flushRoutingCacheForNode(NodeInterface $node): void
+    protected function flushRoutingCacheForNode(NodeInterface $node)
     {
         $nodeData = $node->getNodeData();
         $nodeDataIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
