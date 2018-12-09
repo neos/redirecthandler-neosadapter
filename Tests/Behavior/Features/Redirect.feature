@@ -7,18 +7,18 @@ Feature: Redirects are created automatically when the URI of an existing node is
     And I have the following nodes:
       | Identifier                           | Path                   | Node Type                  | Properties                                | Workspace | Hidden | Language      |
       | ecf40ad1-3119-0a43-d02e-55f8b5aa3c70 | /sites                 | unstructured               |                                           | live      |        |               |
-      | fd5ba6e1-4313-b145-1004-dad2f1173a35 | /sites/behat         | Neos.Neos:Document        | {"uriPathSegment": "home"}                | live      |        | en            |
-      | 68ca0dcd-2afb-ef0e-1106-a5301e65b8a0 | /sites/behat/company | Neos.Neos:Document        | {"uriPathSegment": "company"}             | live      |        | en            |
-      | 52540602-b417-11e3-9358-14109fd7a2dd | /sites/behat/service | Neos.Neos:Document        | {"uriPathSegment": "service"}             | live      |        | en            |
-      | dc48851c-f653-ebd5-4d35-3feac69a3e09 | /sites/behat/about   | Neos.Neos:Document        | {"uriPathSegment": "about"}               | live      |        | en            |
-      | 511e9e4b-2193-4100-9a91-6fde2586ae95 | /sites/behat/imprint | Neos.Neos:Document        | {"uriPathSegment": "impressum"}           | live      |        | de            |
-      | 511e9e4b-2193-4100-9a91-6fde2586ae95 | /sites/behat/imprint | Neos.Neos:Document        | {"uriPathSegment": "imprint"}             | live      |        | en            |
-      | 511e9e4b-2193-4100-9a91-6fde2586ae95 | /sites/behat/imprint | Neos.Neos:Document        | {"uriPathSegment": "empreinte"}           | live      |        | fr            |
-      | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy     | Neos.Neos:Document        | {"uriPathSegment": "buy", "title": "Buy"} | live      |        | en            |
-      | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy     | Neos.Neos:Document        | {"uriPathSegment": "acheter"}             | live      |        | fr            |
-      | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy     | Neos.Neos:Document        | {"uriPathSegment": "kaufen"}              | live      | true   | de            |
-      | 81dc6c8c-f478-434c-9ac9-bd5d1781cd95 | /sites/behat/mail    | Neos.Neos:Document        | {"uriPathSegment": "mail"}                | live      |        | en            |
-      | 81dc6c8c-f478-434c-9ac9-bd5d1781cd95 | /sites/behat/mail    | Neos.Neos:Document        | {"uriPathSegment": "mail"}                | live      | true   | de            |
+      | fd5ba6e1-4313-b145-1004-dad2f1173a35 | /sites/behat           | Neos.Neos:Document         | {"uriPathSegment": "home"}                | live      |        | en            |
+      | 68ca0dcd-2afb-ef0e-1106-a5301e65b8a0 | /sites/behat/company   | Neos.Neos:Document         | {"uriPathSegment": "company"}             | live      |        | en            |
+      | 52540602-b417-11e3-9358-14109fd7a2dd | /sites/behat/service   | Neos.Neos:Document         | {"uriPathSegment": "service"}             | live      |        | en            |
+      | dc48851c-f653-ebd5-4d35-3feac69a3e09 | /sites/behat/about     | Neos.Neos:Document         | {"uriPathSegment": "about"}               | live      |        | en            |
+      | 511e9e4b-2193-4100-9a91-6fde2586ae95 | /sites/behat/imprint   | Neos.Neos:Document         | {"uriPathSegment": "impressum"}           | live      |        | de            |
+      | 511e9e4b-2193-4100-9a91-6fde2586ae95 | /sites/behat/imprint   | Neos.Neos:Document         | {"uriPathSegment": "imprint"}             | live      |        | en            |
+      | 511e9e4b-2193-4100-9a91-6fde2586ae95 | /sites/behat/imprint   | Neos.Neos:Document         | {"uriPathSegment": "empreinte"}           | live      |        | fr            |
+      | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy       | Neos.Neos:Document         | {"uriPathSegment": "buy", "title": "Buy"} | live      |        | en            |
+      | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy       | Neos.Neos:Document         | {"uriPathSegment": "acheter"}             | live      |        | fr            |
+      | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy       | Neos.Neos:Document         | {"uriPathSegment": "kaufen"}              | live      | true   | de            |
+      | 81dc6c8c-f478-434c-9ac9-bd5d1781cd95 | /sites/behat/mail      | Neos.Neos:Document         | {"uriPathSegment": "mail"}                | live      |        | en            |
+      | 81dc6c8c-f478-434c-9ac9-bd5d1781cd95 | /sites/behat/mail      | Neos.Neos:Document         | {"uriPathSegment": "mail"}                | live      | true   | de            |
 
   @fixtures
   Scenario: Move a node into different node and a redirect will be created
