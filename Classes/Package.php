@@ -11,6 +11,7 @@ namespace Neos\RedirectHandler\NeosAdapter;
  * source code.
  */
 
+use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Package\Package as BasePackage;
@@ -29,6 +30,7 @@ class Package extends BasePackage
     {
         $dispatcher = $bootstrap->getSignalSlotDispatcher();
 
-        $dispatcher->connect(Workspace::class, 'beforeNodePublishing', NodeRedirectService::class, 'createRedirectsForPublishedNode');
+        $dispatcher->connect(Workspace::class, 'beforeNodePublishing', NodeRedirectService::class, 'collectPossibleRedirects');
+        $dispatcher->connect(PersistenceManager::class, 'allObjectsPersisted', NodeRedirectService::class, 'createPendingRedirects');
     }
 }
