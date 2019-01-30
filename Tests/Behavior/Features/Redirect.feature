@@ -127,3 +127,12 @@ Feature: Redirects are created automatically when the URI of an existing node is
     And I publish the node
     Then I should have a redirect with sourceUri "en/company.html" and targetUri "en/service/company.html"
     And I should have a redirect with sourceUri "de/company.html" and targetUri "de/service/company.html"
+
+  @fixtures
+  Scenario: Deleted nodes create a redirect with 410 Status
+    When I get a node by path "/sites/behat/about" with the following context:
+        | Workspace        |
+        | user-testaccount |
+    And I remove the node
+    And I publish the workspace "user-testaccount"
+    And I should have a redirect with sourceUri "en/about.html" and statusCode "410"

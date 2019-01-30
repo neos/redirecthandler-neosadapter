@@ -32,7 +32,8 @@ trait RedirectOperationTrait
         foreach ($rows as $row) {
             $nodeRedirectStorage->addRedirect(
                 $this->buildActualUriPath($row['sourceuripath']),
-                $this->buildActualUriPath($row['targeturipath'])
+                $this->buildActualUriPath($row['targeturipath']),
+                isset($row['statuscode']) ? (int)$row['statuscode'] : 307
             );
         }
 
@@ -67,6 +68,25 @@ trait RedirectOperationTrait
         if ($redirect !== null) {
             Assert::assertEquals($targetUri, $redirect->getTargetUriPath(),
                 'A redirect was created, but the target URI does not match'
+            );
+        } else {
+            Assert::assertNotNull($redirect, 'No redirect was created for asserted sourceUri');
+        }
+    }
+
+    /**
+     *  @Given /^I should have a redirect with sourceUri "([^"]*)" and statusCode "([^"]*)"$/
+     */
+    public function iShouldHaveARedirectWithSourceUriAndStatusCode($sourceUri, $statusCode)
+    {
+        $nodeRedirectStorage = $this->objectManager->get(RedirectStorage::class);
+        $sourceUri = $this->buildActualUriPath($sourceUri);
+
+        $redirect = $nodeRedirectStorage->getOneBySourceUriPathAndHost($sourceUri);
+
+        if ($redirect !== null) {
+            Assert::assertEquals((string)$statusCode, (string)$redirect->getStatusCode(),
+                'A redirect was created, but the statusCode does not match'
             );
         } else {
             Assert::assertNotNull($redirect, 'No redirect was created for asserted sourceUri');
