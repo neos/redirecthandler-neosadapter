@@ -19,6 +19,7 @@ Feature: Redirects are created automatically when the URI of an existing node is
       | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy       | Neos.Neos:Document         | {"uriPathSegment": "kaufen"}              | live      | true   | de            |
       | 81dc6c8c-f478-434c-9ac9-bd5d1781cd95 | /sites/behat/mail      | Neos.Neos:Document         | {"uriPathSegment": "mail"}                | live      |        | en            |
       | 81dc6c8c-f478-434c-9ac9-bd5d1781cd95 | /sites/behat/mail      | Neos.Neos:Document         | {"uriPathSegment": "mail"}                | live      | true   | de            |
+    And I have no redirects
 
   @fixtures
   Scenario: Move a node into different node and a redirect will be created
@@ -131,8 +132,18 @@ Feature: Redirects are created automatically when the URI of an existing node is
   @fixtures
   Scenario: Deleted nodes create a redirect with 410 Status
     When I get a node by path "/sites/behat/about" with the following context:
-        | Workspace        |
-        | user-testaccount |
+      | Workspace        |
+      | user-testaccount |
     And I remove the node
     And I publish the workspace "user-testaccount"
-    And I should have a redirect with sourceUri "en/about.html" and statusCode "410"
+    Then I should have a redirect with sourceUri "en/about.html" and statusCode "410"
+
+  @fixtures
+  Scenario: Hidden nodes create no redirect
+    When I get a node by path "/sites/behat/about" with the following context:
+      | Workspace        |
+      | user-testaccount |
+    And I hide the node
+    And I publish the workspace "user-testaccount"
+    Then I should have no redirect with sourceUri "en/about.html"
+

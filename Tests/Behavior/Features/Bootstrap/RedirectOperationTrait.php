@@ -20,6 +20,17 @@ use PHPUnit\Framework\Assert;
 trait RedirectOperationTrait
 {
     /**
+     * @Given /^I have no redirects$/
+     */
+    public function iHaveNoRedirects()
+    {
+        $nodeRedirectStorage = $this->objectManager->get(RedirectStorage::class);
+        $redirectRepository = $this->objectManager->get(RedirectRepository::class);
+        $nodeRedirectStorage->removeAll();
+        $redirectRepository->persistEntities();
+    }
+
+    /**
      * @Given /^I have the following redirects:$/
      * @When /^I create the following redirects:$/
      */
