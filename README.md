@@ -1,3 +1,7 @@
+[![Latest Stable Version](https://poser.pugx.org/neos/redirecthandler-neosadapter/v/stable)](https://packagist.org/packages/neos/redirecthandler-neosadapter)
+[![Total Downloads](https://poser.pugx.org/neos/redirecthandler-neosadapter/downloads)](https://packagist.org/packages/neos/redirecthandler-neosadapter)
+[![License](https://poser.pugx.org/neos/redirecthandler-neosadapter/license)](LICENSE)
+
 # Neos redirect handler
 
 This package enables automatic redirects for renamed/moved pages. This helps with SEO and user experience by avoiding dead links.
