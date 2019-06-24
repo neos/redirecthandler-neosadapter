@@ -74,3 +74,67 @@ Restrict redirect generation by old URI prefix.
 
   restrictByOldUriPrefix:
     '/some/uri/path': true
+
+Exporting redirects
+-------------------
+
+Via the CLI
+^^^^^^^^^^^
+
+You can export a CSV file with redirects from the commandline with this command:
+
+```
+flow redirect:export --filename my-export.csv
+```
+
+You can also add the optional arguments `host` to only export redirects for one
+site and `includeHeader` to also render a row with column headers (enabled by default).
+
+Via the UI
+^^^^^^^^^^
+
+If you have the `Neos.RedirectHandler.Ui` [package](https://github.com/neos/redirecthandler-ui) installed
+you can also export the redirects via the UI in the redirect handler backend module.
+
+Importing redirects
+-------------------
+
+Via the CLI
+^^^^^^^^^^^
+
+You can import redirects from a CSV file in the commandline with this command:
+
+```
+flow redirect:import --filename my-export.csv
+```
+
+You can also add the optional argument `delimiter` to set a custom delimiter used in your CSV file.
+
+After the import is done you will receive a protocol which will list all changes and errors, if any occurred.
+
+The expected format is this:
+
+```
+"Source Uri","Target Uri","Status Code",Host,"Start DateTime","End DateTime",Comment,Creator,Type
+my-source-uri,my-target-uri,307,,2019-06-28-13-11-00,2019-06-30-13-11-00,"New product",myName,manual
+```
+
+It is recommended to first export your redirects and work on the resulting file, so you already have this structure.
+However, you can also create a CSV file yourself. The first row with headings is optional as are all columns except the
+first three `Source Uri`, `Target Uri` and `Status Code`.
+That means you can create a CSV file with 3 columns and without a header row and the import should work fine.
+If you use the other fields to, you must have them in the correct order or errors might occur.
+
+No deletions will be done, when the imported CSV file doesn't contain existing redirects.
+
+Deletions might occur when redirect chains are resolved. So a redirect from `A -> B` and a redirect from `B -> C` will be
+combined into one redirect `A -> C`.
+If you still need the redirect from `B -> C`, you might need to add that one afterwards again.
+
+Via the UI
+^^^^^^^^^^
+
+If you have the `Neos.RedirectHandler.Ui` [package](https://github.com/neos/redirecthandler-ui) installed
+you can also export the redirects via the UI in the redirect handler backend module.
+
+The same restrictions and requirements apply as for the import via the CLI.
