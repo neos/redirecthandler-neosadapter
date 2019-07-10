@@ -46,10 +46,10 @@ restrictByNodeType
 
 Restrict redirect generation by node type.
 
-```
-restrictByNodeType:
-  Neos.Neos:Document: true
-```
+.. code-block:: yaml
+
+  restrictByNodeType:
+    Neos.Neos:Document: true
 
 restrictByPathPrefix
 ^^^^^^^^^^^^^^^^^^^^
@@ -60,7 +60,17 @@ Restrict redirect generation by node path prefix.
 restricted path. But if you move a node into the restricted path the restriction rule will not apply, because the
 restriction is based on the source node path.
 
-```
-restrictByPathPrefix:
-  - '/sites/neosdemo': true
-```
+.. code-block:: yaml
+
+  restrictByPathPrefix:
+    - '/sites/neosdemo': true
+
+restrictByOldUriPrefix
+^^^^^^^^^^^^^^^^^^^^^^
+
+Restrict redirect generation by old URI prefix.
+
+.. code-block:: yaml
+
+  restrictByOldUriPrefix:
+    '/some/uri/path': true
