@@ -6,11 +6,11 @@ Neos:
       # For example redirect to dedicated landing pages for deleted campaign NodeTypes
       enableRemovedNodeRedirect: true
 
-      pathPrefixConfiguration: []
-      #  '/sites/neosdemo/': false
+      restrictByPathPrefix: []
+      #  '/sites/neosdemo/': true
 
-      nodeTypeConfiguration:
-        Neos.Neos:Document: true
+      restrictByNodeType: []
+      #  'Acme.Com:SomeDocument': true
 
       restrictByOldUriPrefix: []
       #  '/some/uri/path/': true
