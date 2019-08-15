@@ -102,6 +102,12 @@ class NodeRedirectService
     protected $restrictByPathPrefix;
 
     /**
+     * @Flow\InjectConfiguration(path="restrictByOldUriPrefix", package="Neos.RedirectHandler.NeosAdapter")
+     * @var array
+     */
+    protected $restrictByOldUriPrefix;
+
+    /**
      * @Flow\InjectConfiguration(path="restrictByNodeType", package="Neos.RedirectHandler.NeosAdapter")
      * @var array
      */
@@ -252,7 +258,7 @@ class NodeRedirectService
             return false;
         }
 
-        if ($this->isRestrictedByNodeType($node) || $this->isRestrictedByPath($node)) {
+        if ($this->isRestrictedByNodeType($node) || $this->isRestrictedByPath($node) || $this->isRestrictedByOldUri($oldUri, $node)) {
             return false;
         }
 
@@ -363,6 +369,38 @@ class NodeRedirectService
                     $node->getPath(),
                     $node->getContextPath(),
                     $pathPrefix
+                ]), LOG_DEBUG, null, 'RedirectHandler');
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the old URI is restricted by Settings
+     *
+     * @param string $oldUri
+     * @param NodeInterface $node
+     * @return bool
+     */
+    protected function isRestrictedByOldUri(string $oldUri, NodeInterface $node): bool
+    {
+        if (!isset($this->restrictByOldUriPrefix)) {
+            return false;
+        }
+
+        foreach ($this->restrictByOldUriPrefix as $uriPrefix => $status) {
+            if ($status !== true) {
+                continue;
+            }
+            $uriPrefix = rtrim($uriPrefix, '/') . '/';
+            if (mb_strpos($oldUri, $uriPrefix) === 0) {
+                $this->systemLogger->log(vsprintf('Redirect skipped based on the old URI (%s) for node %s because prefix matches %s', [
+                    $oldUri,
+                    $node->getContextPath(),
+                    $uriPrefix
                 ]), LOG_DEBUG, null, 'RedirectHandler');
 
                 return true;

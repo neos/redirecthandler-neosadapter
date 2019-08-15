@@ -11,3 +11,6 @@ Neos:
 
       nodeTypeConfiguration:
         Neos.Neos:Document: true
+
+      restrictByOldUriPrefix: []
+      #  '/some/uri/path/': true
