@@ -11,3 +11,6 @@ Neos:
 
       restrictByNodeType: []
       #  'Acme.Com:SomeDocument': true
+
+      restrictByOldUriPrefix: []
+      #  '/some/uri/path/': true
