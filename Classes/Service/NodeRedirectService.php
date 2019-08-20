@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Neos\RedirectHandler\NeosAdapter\Service;
 
 /*
@@ -127,7 +129,7 @@ class NodeRedirectService
      * @return void
      * @throws MissingActionNameException
      */
-    public function collectPossibleRedirects(NodeInterface $node, Workspace $targetWorkspace)
+    public function collectPossibleRedirects(NodeInterface $node, Workspace $targetWorkspace): void
     {
         $nodeType = $node->getNodeType();
         if ($targetWorkspace->isPublicWorkspace() === false || $nodeType->isOfType('Neos.Neos:Document') === false) {
@@ -142,7 +144,7 @@ class NodeRedirectService
      * @return void
      * @throws MissingActionNameException
      */
-    public function createPendingRedirects()
+    public function createPendingRedirects(): void
     {
         $this->nodeFactory->reset();
         foreach ($this->pendingRedirects as $nodeIdentifierAndWorkspace => $oldUriPerDimensionCombination) {
@@ -159,7 +161,7 @@ class NodeRedirectService
      * @return void
      * @throws MissingActionNameException
      */
-    protected function appendNodeAndChildrenDocumentsToPendingRedirects(NodeInterface $node, Workspace $targetWorkspace)
+    protected function appendNodeAndChildrenDocumentsToPendingRedirects(NodeInterface $node, Workspace $targetWorkspace): void
     {
         $identifierAndWorkspaceKey = $node->getIdentifier() . '@' . $targetWorkspace->getName();
         if (isset($this->pendingRedirects[$identifierAndWorkspaceKey])) {
@@ -235,7 +237,7 @@ class NodeRedirectService
      * @return void
      * @throws MissingActionNameException
      */
-    protected function buildRedirects(string $nodeIdentifier, string $workspaceName, array $oldUriPerDimensionCombination)
+    protected function buildRedirects(string $nodeIdentifier, string $workspaceName, array $oldUriPerDimensionCombination): void
     {
         foreach ($oldUriPerDimensionCombination as list($oldRelativeUri, $dimensionCombination)) {
             $this->createRedirectFrom($oldRelativeUri, $nodeIdentifier, $workspaceName, $dimensionCombination);
@@ -439,7 +441,7 @@ class NodeRedirectService
      * @param NodeInterface $node
      * @return void
      */
-    protected function flushRoutingCacheForNode(NodeInterface $node)
+    protected function flushRoutingCacheForNode(NodeInterface $node): void
     {
         $nodeData = $node->getNodeData();
         $nodeDataIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
@@ -490,7 +492,7 @@ class NodeRedirectService
      * @param Workspace $targetWorkspace
      * @return NodeInterface|null
      */
-    protected function getNodeInWorkspace(NodeInterface $node, Workspace $targetWorkspace)
+    protected function getNodeInWorkspace(NodeInterface $node, Workspace $targetWorkspace): ?NodeInterface
     {
         return $this->getNodeInWorkspaceAndDimensions($node->getIdentifier(), $targetWorkspace->getName(), $node->getContext()->getDimensions());
     }
@@ -501,7 +503,7 @@ class NodeRedirectService
      * @param array $dimensionCombination
      * @return NodeInterface|null
      */
-    protected function getNodeInWorkspaceAndDimensions(string $nodeIdentifier, string $workspaceName, array $dimensionCombination)
+    protected function getNodeInWorkspaceAndDimensions(string $nodeIdentifier, string $workspaceName, array $dimensionCombination): ?NodeInterface
     {
         $context = $this->contextFactory->create([
             'workspaceName' => $workspaceName,
