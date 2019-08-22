@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Neos\RedirectHandler\NeosAdapter\Service;
 
 /*
@@ -18,14 +20,15 @@ use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Request;
-use Neos\Flow\Log\SystemLoggerInterface;
 use Neos\Flow\Mvc\ActionRequest;
+use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Mvc\Routing\RouterCachingService;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
 use Neos\Neos\Domain\Model\Domain;
 use Neos\Neos\Domain\Service\ContentContext;
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Service that creates redirects for moved / deleted nodes.
@@ -73,9 +76,9 @@ class NodeRedirectService
 
     /**
      * @Flow\Inject
-     * @var SystemLoggerInterface
+     * @var LoggerInterface
      */
-    protected $systemLogger;
+    protected $logger;
 
     /**
      * @Flow\InjectConfiguration(path="statusCode", package="Neos.RedirectHandler")
@@ -124,9 +127,9 @@ class NodeRedirectService
      * @param NodeInterface $node The node that is about to be published
      * @param Workspace $targetWorkspace
      * @return void
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     * @throws MissingActionNameException
      */
-    public function collectPossibleRedirects(NodeInterface $node, Workspace $targetWorkspace)
+    public function collectPossibleRedirects(NodeInterface $node, Workspace $targetWorkspace): void
     {
         $nodeType = $node->getNodeType();
         if ($targetWorkspace->isPublicWorkspace() === false || $nodeType->isOfType('Neos.Neos:Document') === false) {
@@ -139,9 +142,9 @@ class NodeRedirectService
      * Creates the queued redirects provided we can find the node.
      *
      * @return void
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     * @throws MissingActionNameException
      */
-    public function createPendingRedirects()
+    public function createPendingRedirects(): void
     {
         $this->nodeFactory->reset();
         foreach ($this->pendingRedirects as $nodeIdentifierAndWorkspace => $oldUriPerDimensionCombination) {
@@ -156,9 +159,9 @@ class NodeRedirectService
      * @param NodeInterface $node
      * @param Workspace $targetWorkspace
      * @return void
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     * @throws MissingActionNameException
      */
-    protected function appendNodeAndChildrenDocumentsToPendingRedirects(NodeInterface $node, Workspace $targetWorkspace)
+    protected function appendNodeAndChildrenDocumentsToPendingRedirects(NodeInterface $node, Workspace $targetWorkspace): void
     {
         $identifierAndWorkspaceKey = $node->getIdentifier() . '@' . $targetWorkspace->getName();
         if (isset($this->pendingRedirects[$identifierAndWorkspaceKey])) {
@@ -180,7 +183,7 @@ class NodeRedirectService
      * @param string $nodeIdentifier
      * @param Workspace $targetWorkspace
      * @return array
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     * @throws MissingActionNameException
      */
     protected function createUriPathsAcrossDimensionsForNode(string $nodeIdentifier, Workspace $targetWorkspace): array
     {
@@ -208,7 +211,7 @@ class NodeRedirectService
      * @param NodeInterface $node
      * @param Workspace $targetWorkspace
      * @return bool
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     * @throws MissingActionNameException
      */
     protected function hasNodeUriChanged(NodeInterface $node, Workspace $targetWorkspace): bool
     {
@@ -232,9 +235,9 @@ class NodeRedirectService
      * @param string $workspaceName
      * @param $oldUriPerDimensionCombination
      * @return void
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     * @throws MissingActionNameException
      */
-    protected function buildRedirects(string $nodeIdentifier, string $workspaceName, array $oldUriPerDimensionCombination)
+    protected function buildRedirects(string $nodeIdentifier, string $workspaceName, array $oldUriPerDimensionCombination): void
     {
         foreach ($oldUriPerDimensionCombination as list($oldRelativeUri, $dimensionCombination)) {
             $this->createRedirectFrom($oldRelativeUri, $nodeIdentifier, $workspaceName, $dimensionCombination);
@@ -249,7 +252,7 @@ class NodeRedirectService
      * @param string $workspaceName
      * @param array $dimensionCombination
      * @return bool
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     * @throws MissingActionNameException
      */
     protected function createRedirectFrom(string $oldUri, string $nodeIdentifer, string $workspaceName, array $dimensionCombination): bool
     {
@@ -334,11 +337,11 @@ class NodeRedirectService
                 continue;
             }
             if ($node->getNodeType()->isOfType($disabledNodeType)) {
-                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
+                $this->logger->debug(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
                     $node->getNodeType()->getName(),
                     $node->getContextPath(),
                     $disabledNodeType
-                ]), LOG_DEBUG, null, 'RedirectHandler');
+                ]));
 
                 return true;
             }
@@ -365,11 +368,11 @@ class NodeRedirectService
             }
             $pathPrefix = rtrim($pathPrefix, '/') . '/';
             if (mb_strpos($node->getPath(), $pathPrefix) === 0) {
-                $this->systemLogger->log(vsprintf('Redirect skipped based on the current node path (%s) for node %s because prefix matches %s', [
+                $this->logger->debug(vsprintf('Redirect skipped based on the current node path (%s) for node %s because prefix matches %s', [
                     $node->getPath(),
                     $node->getContextPath(),
                     $pathPrefix
-                ]), LOG_DEBUG, null, 'RedirectHandler');
+                ]));
 
                 return true;
             }
@@ -397,11 +400,11 @@ class NodeRedirectService
             }
             $uriPrefix = rtrim($uriPrefix, '/') . '/';
             if (mb_strpos($oldUri, $uriPrefix) === 0) {
-                $this->systemLogger->log(vsprintf('Redirect skipped based on the old URI (%s) for node %s because prefix matches %s', [
+                $this->logger->debug(vsprintf('Redirect skipped based on the old URI (%s) for node %s because prefix matches %s', [
                     $oldUri,
                     $node->getContextPath(),
                     $uriPrefix
-                ]), LOG_DEBUG, null, 'RedirectHandler');
+                ]));
 
                 return true;
             }
@@ -438,7 +441,7 @@ class NodeRedirectService
      * @param NodeInterface $node
      * @return void
      */
-    protected function flushRoutingCacheForNode(NodeInterface $node)
+    protected function flushRoutingCacheForNode(NodeInterface $node): void
     {
         $nodeData = $node->getNodeData();
         $nodeDataIdentifier = $this->persistenceManager->getIdentifierByObject($nodeData);
@@ -453,7 +456,7 @@ class NodeRedirectService
      *
      * @param NodeInterface $node
      * @return string the resulting (relative) URI
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     * @throws MissingActionNameException
      */
     protected function buildUriPathForNode(NodeInterface $node): string
     {
@@ -489,7 +492,7 @@ class NodeRedirectService
      * @param Workspace $targetWorkspace
      * @return NodeInterface|null
      */
-    protected function getNodeInWorkspace(NodeInterface $node, Workspace $targetWorkspace)
+    protected function getNodeInWorkspace(NodeInterface $node, Workspace $targetWorkspace): ?NodeInterface
     {
         return $this->getNodeInWorkspaceAndDimensions($node->getIdentifier(), $targetWorkspace->getName(), $node->getContext()->getDimensions());
     }
@@ -500,7 +503,7 @@ class NodeRedirectService
      * @param array $dimensionCombination
      * @return NodeInterface|null
      */
-    protected function getNodeInWorkspaceAndDimensions(string $nodeIdentifier, string $workspaceName, array $dimensionCombination)
+    protected function getNodeInWorkspaceAndDimensions(string $nodeIdentifier, string $workspaceName, array $dimensionCombination): ?NodeInterface
     {
         $context = $this->contextFactory->create([
             'workspaceName' => $workspaceName,
