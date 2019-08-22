@@ -75,8 +75,9 @@ Restrict redirect generation by old URI prefix.
   restrictByOldUriPrefix:
     '/some/uri/path': true
 
-Exporting redirects
--------------------
+===============================
+Exporting & importing redirects
+===============================
 
 Via the CLI
 ^^^^^^^^^^^
