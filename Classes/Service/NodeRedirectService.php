@@ -19,7 +19,8 @@ use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Http\Request;
+use Neos\Flow\Core\Bootstrap;
+use Neos\Flow\Http\HttpRequestHandlerInterface;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Mvc\Routing\RouterCachingService;
@@ -79,6 +80,12 @@ class NodeRedirectService
      * @var LoggerInterface
      */
     protected $logger;
+
+    /**
+     * @var Bootstrap
+     * @Flow\Inject
+     */
+    protected $bootstrap;
 
     /**
      * @Flow\InjectConfiguration(path="statusCode", package="Neos.RedirectHandler")
@@ -475,8 +482,16 @@ class NodeRedirectService
             return $this->uriBuilder;
         }
 
-        $httpRequest = Request::createFromEnvironment();
-        $actionRequest = new ActionRequest($httpRequest);
+        /** @var HttpRequestHandlerInterface $requestHandler */
+        $requestHandler = $this->bootstrap->getActiveRequestHandler();
+        if (method_exists(ActionRequest::class, 'fromHttpRequest')) {
+            // From Flow 6+ we have to use a static method to create an ActionRequest. Earlier versions use the constructor.
+            $actionRequest = ActionRequest::fromHttpRequest($requestHandler->getHttpRequest());
+        } else {
+            // This can be cleaned up when this package in a future release only support Flow 6+.
+            $actionRequest = new ActionRequest($requestHandler->getHttpRequest());
+        }
+
         $this->uriBuilder = new UriBuilder();
         $this->uriBuilder
             ->setRequest($actionRequest);
