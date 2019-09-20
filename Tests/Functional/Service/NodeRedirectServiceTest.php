@@ -2,7 +2,7 @@
 namespace Neos\RedirectHandler\NeosAdapter\Tests\Functional\Service;
 
 /*
- * This file is part of the Neos.Flow package.
+ * This file is part of the Neos.RedirectHandler.NeosAdapter package.
  *
  * (c) Contributors of the Neos Project - www.neos.io
  *
@@ -16,6 +16,9 @@ use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Exception\NodeExistsException;
+use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\Service\ContentContext;
@@ -24,10 +27,8 @@ use Neos\Neos\Service\PublishingService;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
 use Neos\Flow\Tests\FunctionalTestCase;
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 
-/**
- * Functional test cases for the NodeRedirectService
- */
 class NodeRedirectServiceTest extends FunctionalTestCase
 {
     /**
@@ -46,7 +47,7 @@ class NodeRedirectServiceTest extends FunctionalTestCase
     protected $workspaceRepository;
 
     /**
-     * @var RedirectStorageInterface|\PHPUnit_Framework_MockObject_MockObject
+     * @var RedirectStorageInterface|MockObject
      */
     protected $mockRedirectStorage;
 
@@ -96,11 +97,11 @@ class NodeRedirectServiceTest extends FunctionalTestCase
     protected $siteRepository;
 
     /**
-     * @throws \Neos\Flow\Persistence\Exception\IllegalObjectTypeException
-     * @throws \Neos\ContentRepository\Exception\NodeExistsException
-     * @throws \Neos\ContentRepository\Exception\NodeTypeNotFoundException
+     * @throws IllegalObjectTypeException
+     * @throws NodeExistsException
+     * @throws NodeTypeNotFoundException
      */
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         $this->nodeRedirectService = $this->objectManager->get(NodeRedirectService::class);
@@ -133,7 +134,7 @@ class NodeRedirectServiceTest extends FunctionalTestCase
     /**
      * @return void
      */
-    public function tearDown()
+    public function tearDown(): void
     {
         parent::tearDown();
         $this->inject($this->contentContextFactory, 'contextInstances', array());
@@ -141,8 +142,8 @@ class NodeRedirectServiceTest extends FunctionalTestCase
 
     /**
      * @test
-     * @throws \Neos\ContentRepository\Exception\NodeExistsException
-     * @throws \Neos\ContentRepository\Exception\NodeTypeNotFoundException
+     * @throws NodeExistsException
+     * @throws NodeTypeNotFoundException
      */
     public function createRedirectsForPublishedNodeCreatesRedirectFromPreviousUriWhenMovingDocumentDown()
     {
@@ -165,8 +166,8 @@ class NodeRedirectServiceTest extends FunctionalTestCase
 
     /**
      * @test
-     * @throws \Neos\ContentRepository\Exception\NodeExistsException
-     * @throws \Neos\ContentRepository\Exception\NodeTypeNotFoundException
+     * @throws NodeExistsException
+     * @throws NodeTypeNotFoundException
      */
     public function createRedirectsForPublishedNodeCreatesRedirectFromPreviousUriWhenMovingDocumentUp()
     {
@@ -189,8 +190,8 @@ class NodeRedirectServiceTest extends FunctionalTestCase
 
     /**
      * @test
-     * @throws \Neos\ContentRepository\Exception\NodeExistsException
-     * @throws \Neos\ContentRepository\Exception\NodeTypeNotFoundException
+     * @throws NodeExistsException
+     * @throws NodeTypeNotFoundException
      */
     public function createRedirectsForPublishedNodeLeavesUpwardRedirectWhenMovingDocumentDownAndUp()
     {
@@ -199,9 +200,9 @@ class NodeRedirectServiceTest extends FunctionalTestCase
         $this->mockRedirectStorage->expects($this->exactly(2))
             ->method('addRedirect')
             ->with($this->logicalOr(
-                    $this->equalTo('/en/document.html'),
-                    $this->equalTo('/en/outer/document.html')
-                ),
+                $this->equalTo('/en/document.html'),
+                $this->equalTo('/en/outer/document.html')
+            ),
                 $this->logicalOr(
                     $this->equalTo('/en/outer/document.html'),
                     $this->equalTo('/en/document.html')
