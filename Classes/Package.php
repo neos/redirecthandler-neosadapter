@@ -25,14 +25,22 @@ use Neos\ContentRepository\Domain\Model\Workspace;
 class Package extends BasePackage
 {
     /**
+     * @Flow\InjectConfiguration(path="disableAutomaticRedirects")
+     * @var boolean
+     */
+    protected $disableAutomaticRedirects;
+
+    /**
      * @param Bootstrap $bootstrap The current bootstrap
      * @return void
      */
     public function boot(Bootstrap $bootstrap): void
     {
-        $dispatcher = $bootstrap->getSignalSlotDispatcher();
+        if ($this->disableAutomaticRedirects === false) {
+            $dispatcher = $bootstrap->getSignalSlotDispatcher();
 
-        $dispatcher->connect(Workspace::class, 'beforeNodePublishing', NodeRedirectService::class, 'collectPossibleRedirects');
-        $dispatcher->connect(PersistenceManager::class, 'allObjectsPersisted', NodeRedirectService::class, 'createPendingRedirects');
+            $dispatcher->connect(Workspace::class, 'beforeNodePublishing', NodeRedirectService::class, 'collectPossibleRedirects');
+            $dispatcher->connect(PersistenceManager::class, 'allObjectsPersisted', NodeRedirectService::class, 'createPendingRedirects');
+        }
     }
 }
