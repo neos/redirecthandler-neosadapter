@@ -9,8 +9,8 @@ Neos:
       pathPrefixConfiguration: []
       #  '/sites/neosdemo/': false
 
-      nodeTypeConfiguration:
-        Neos.Neos:Document: true
+      restrictByNodeType: []
+      #  Neos.Neos:Document: true
 
       restrictByOldUriPrefix: []
       #  '/some/uri/path/': true
