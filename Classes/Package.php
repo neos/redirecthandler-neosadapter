@@ -15,10 +15,10 @@ namespace Neos\RedirectHandler\NeosAdapter;
 
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
+use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Package\Package as BasePackage;
 use Neos\ContentRepository\Domain\Model\Workspace;
-use Neos\Flow\Annotations as Flow;
 
 /**
  * The Neos RedirectHandler NeosAdapter Package
@@ -26,18 +26,15 @@ use Neos\Flow\Annotations as Flow;
 class Package extends BasePackage
 {
     /**
-     * @Flow\InjectConfiguration(path="disableAutomaticRedirects")
-     * @var boolean
-     */
-    protected $disableAutomaticRedirects;
-
-    /**
      * @param Bootstrap $bootstrap The current bootstrap
      * @return void
      */
     public function boot(Bootstrap $bootstrap): void
     {
-        if ($this->disableAutomaticRedirects === false) {
+        $configurationManager = $bootstrap->getObjectManager()->get(ConfigurationManager::class);
+        $settings = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, $this->getPackageKey());
+
+        if (isset($settings['enableAutomaticRedirects']) && $settings['enableAutomaticRedirects'] === true) {
             $dispatcher = $bootstrap->getSignalSlotDispatcher();
 
             $dispatcher->connect(Workspace::class, 'beforeNodePublishing', NodeRedirectService::class, 'collectPossibleRedirects');

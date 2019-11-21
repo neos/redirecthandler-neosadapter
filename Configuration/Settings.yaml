@@ -17,4 +17,4 @@ Neos:
 
       # in some cases you might need to completely disable the automatic redirects
       # e.g. on cli, during imports or similar
-      disableAutomaticRedirects: false
+      enableAutomaticRedirects: true
