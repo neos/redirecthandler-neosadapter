@@ -38,8 +38,12 @@ The available CLI commands for custom redirect management can be found in the `N
 Restrict generation
 -------------------
 
-It is possible to restrict the generation of redirects to a certain node path or node type. For instance, you can user
-in an multi site environment or avoid massive redirect generation if you don't need it.
+It is possible to restrict the generation of redirects to a certain node path or node type. For instance, you can use it
+in a multi site environment or avoid massive redirect generation if you don't need it.
+
+The generation of redirects can be disabled by using one of the following three methods. 
+
+.. note:: Adding rules here with a value of `true` (e.g. `Neos.Neos:Document: true`) will add them to a blacklist for redirect generation. This might be confusing, because you could expect that you need to set a rule to `false`, which is not the case.
 
 restrictByNodeType
 ^^^^^^^^^^^^^^^^^^
@@ -48,8 +52,11 @@ Restrict redirect generation by node type.
 
 .. code-block:: yaml
 
-  restrictByNodeType:
-    Neos.Neos:Document: true
+  Neos:
+   RedirectHandler:
+     NeosAdapter:
+      restrictByNodeType:
+        Neos.Neos:Document: true
 
 restrictByPathPrefix
 ^^^^^^^^^^^^^^^^^^^^
@@ -62,8 +69,11 @@ restriction is based on the source node path.
 
 .. code-block:: yaml
 
-  restrictByPathPrefix:
-    - '/sites/neosdemo': true
+  Neos:
+   RedirectHandler:
+     NeosAdapter:
+       restrictByPathPrefix:
+         - '/sites/neosdemo': true
 
 restrictByOldUriPrefix
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -71,9 +81,12 @@ restrictByOldUriPrefix
 Restrict redirect generation by old URI prefix.
 
 .. code-block:: yaml
-
-  restrictByOldUriPrefix:
-    '/some/uri/path': true
+  
+  Neos:
+   RedirectHandler:
+     NeosAdapter:
+      restrictByOldUriPrefix:
+        '/some/uri/path': true
 
 ===============================
 Exporting & importing redirects
