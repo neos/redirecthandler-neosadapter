@@ -15,7 +15,6 @@ namespace Neos\RedirectHandler\NeosAdapter;
 
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
-use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Package\Package as BasePackage;
 use Neos\ContentRepository\Domain\Model\Workspace;
@@ -31,14 +30,9 @@ class Package extends BasePackage
      */
     public function boot(Bootstrap $bootstrap): void
     {
-        $configurationManager = $bootstrap->getObjectManager()->get(ConfigurationManager::class);
-        $settings = $configurationManager->getConfiguration(ConfigurationManager::CONFIGURATION_TYPE_SETTINGS, $this->getPackageKey());
+        $dispatcher = $bootstrap->getSignalSlotDispatcher();
 
-        if (isset($settings['enableAutomaticRedirects']) && $settings['enableAutomaticRedirects'] === true) {
-            $dispatcher = $bootstrap->getSignalSlotDispatcher();
-
-            $dispatcher->connect(Workspace::class, 'beforeNodePublishing', NodeRedirectService::class, 'collectPossibleRedirects');
-            $dispatcher->connect(PersistenceManager::class, 'allObjectsPersisted', NodeRedirectService::class, 'createPendingRedirects');
-        }
+        $dispatcher->connect(Workspace::class, 'beforeNodePublishing', NodeRedirectService::class, 'collectPossibleRedirects');
+        $dispatcher->connect(PersistenceManager::class, 'allObjectsPersisted', NodeRedirectService::class, 'createPendingRedirects');
     }
 }

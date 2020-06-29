@@ -124,6 +124,12 @@ class NodeRedirectService
     protected $restrictByNodeType;
 
     /**
+     * @Flow\InjectConfiguration(path="enableAutomaticRedirects", package="Neos.RedirectHandler.NeosAdapter")
+     * @var array
+     */
+    protected $enableAutomaticRedirects;
+
+    /**
      * @var array
      */
     protected $pendingRedirects = [];
@@ -138,6 +144,10 @@ class NodeRedirectService
      */
     public function collectPossibleRedirects(NodeInterface $node, Workspace $targetWorkspace): void
     {
+        if (!$this->enableAutomaticRedirects) {
+            return;
+        }
+
         $nodeType = $node->getNodeType();
         if ($targetWorkspace->isPublicWorkspace() === false || $nodeType->isOfType('Neos.Neos:Document') === false) {
             return;
@@ -153,6 +163,10 @@ class NodeRedirectService
      */
     public function createPendingRedirects(): void
     {
+        if (!$this->enableAutomaticRedirects) {
+            return;
+        }
+
         $this->nodeFactory->reset();
         foreach ($this->pendingRedirects as $nodeIdentifierAndWorkspace => $oldUriPerDimensionCombination) {
             list($nodeIdentifier, $workspaceName) = explode('@', $nodeIdentifierAndWorkspace);
