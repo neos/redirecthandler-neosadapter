@@ -75,6 +75,19 @@ Restrict redirect generation by old URI prefix.
   restrictByOldUriPrefix:
     '/some/uri/path': true
 
+enableAutomaticRedirects
+^^^^^^^^^^^^^^^^^^^^^^
+
+Completely disable redirect generation.
+
+**Note**: There might be edge cases where you need to disable redirect generation completely
+(comes in handy when using a dedicated subcontext).
+Redirect generation can slow down large node operations, imports etc.
+
+.. code-block:: yaml
+
+  enableAutomaticRedirects: false
+
 ===============================
 Exporting & importing redirects
 ===============================
