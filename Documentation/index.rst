@@ -75,6 +75,14 @@ Restrict redirect generation by old URI prefix.
   restrictByOldUriPrefix:
     '/some/uri/path': true
 
+limitations
+^^^^^^^^^^^
+
+When publishing workspaces via the cli the automatic redirect generation is disabled
+as the uris cannot be reliably generated in the cli context.
+
+It's planned to fix this in a future release.
+
 ===============================
 Exporting & importing redirects
 ===============================
