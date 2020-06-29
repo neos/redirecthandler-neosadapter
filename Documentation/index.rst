@@ -76,9 +76,9 @@ Restrict redirect generation by old URI prefix.
     '/some/uri/path': true
 
 enableAutomaticRedirects
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Completely disable redirect generation.
+Allows completely disabling redirect generation.
 
 **Note**: There might be edge cases where you need to disable redirect generation completely
 (comes in handy when using a dedicated subcontext).
