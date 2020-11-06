@@ -18,3 +18,9 @@ Neos:
       # in some cases you might need to completely disable the automatic redirects
       # e.g. on cli, during imports or similar
       enableAutomaticRedirects: true
+
+      # In cases like publishing changes from the CLI a baseUri is needed to build
+      # a custom request to generate correct redirect uris.
+      # This uri will not be used during publishing from the Neos backend.
+      # If not set, `Neos.Flow.http.baseUri` is used
+      baseUriForAutomaticRedirects: '%env:NEOS_REDIRECTHANDLER_BASEURI%'

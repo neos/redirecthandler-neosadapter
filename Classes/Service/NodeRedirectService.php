@@ -13,15 +13,18 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
  * source code.
  */
 
+use GuzzleHttp\Psr7\ServerRequest;
 use Neos\ContentRepository\Domain\Factory\NodeFactory;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Service\ContentDimensionCombinator;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Cli\CommandRequestHandler;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Http\HttpRequestHandlerInterface;
 use Neos\Flow\Mvc\ActionRequest;
+use Neos\Flow\Mvc\ActionRequestFactory;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Mvc\Routing\RouterCachingService;
 use Neos\Flow\Mvc\Routing\UriBuilder;
@@ -88,6 +91,12 @@ class NodeRedirectService
     protected $bootstrap;
 
     /**
+     * @var ActionRequestFactory
+     * @Flow\Inject
+     */
+    protected $actionRequestFactory;
+
+    /**
      * @Flow\InjectConfiguration(path="statusCode", package="Neos.RedirectHandler")
      * @var array
      */
@@ -130,9 +139,26 @@ class NodeRedirectService
     protected $enableAutomaticRedirects;
 
     /**
+     * @Flow\InjectConfiguration(path="http.baseUri", package="Neos.Flow")
+     * @var string
+     */
+    protected $baseUri;
+
+    /**
+     * @Flow\InjectConfiguration(path="baseUriForAutomaticRedirects", package="Neos.RedirectHandler.NeosAdapter")
+     * @var string
+     */
+    protected $baseUriForAutomaticRedirects;
+
+    /**
      * @var array
      */
     protected $pendingRedirects = [];
+
+    /**
+     * @var ActionRequest
+     */
+    protected $actionRequestForUriBuilder;
 
     /**
      * Collects the node for redirection if it is a 'Neos.Neos:Document' node and its URI has changed
@@ -144,7 +170,7 @@ class NodeRedirectService
      */
     public function collectPossibleRedirects(NodeInterface $node, Workspace $targetWorkspace): void
     {
-        if (!$this->enableAutomaticRedirects) {
+        if (!$this->enableAutomaticRedirects || !$this->getActionRequestForUriBuilder()) {
             return;
         }
 
@@ -153,6 +179,47 @@ class NodeRedirectService
             return;
         }
         $this->appendNodeAndChildrenDocumentsToPendingRedirects($node, $targetWorkspace);
+    }
+
+    /**
+     * Returns the current http request or a generated http request
+     * based on a configured baseUri to allow redirect generation
+     * for CLI requests.
+     *
+     * @return ActionRequest|null
+     */
+    protected function getActionRequestForUriBuilder(): ?ActionRequest
+    {
+        if ($this->actionRequestForUriBuilder) {
+            return $this->actionRequestForUriBuilder;
+        }
+
+        /** @var HttpRequestHandlerInterface $requestHandler */
+        $requestHandler = $this->bootstrap->getActiveRequestHandler();
+
+        if ($requestHandler instanceof CommandRequestHandler) {
+            // Generate a custom request when the current request was triggered from CLI
+            $baseUri = $this->baseUriForAutomaticRedirects ?? $this->baseUri;
+
+            // Skip if no baseUri is available
+            if (!$baseUri) {
+                return null;
+            }
+
+            // Prevent `index.php` appearing in generated redirects
+            putenv('FLOW_REWRITEURLS=1');
+
+            $serverRequest = new ServerRequest('POST', $baseUri);
+            $this->actionRequestForUriBuilder = $this->actionRequestFactory->createActionRequest($serverRequest);
+        } elseif (method_exists(ActionRequest::class, 'fromHttpRequest')) {
+            // From Flow 6+ we have to use a static method to create an ActionRequest. Earlier versions use the constructor.
+            $this->actionRequestForUriBuilder = ActionRequest::fromHttpRequest($requestHandler->getHttpRequest());
+        } else {
+            // This can be cleaned up when this package in a future release only support Flow 6+.
+            $this->actionRequestForUriBuilder = new ActionRequest($requestHandler->getHttpRequest());
+        }
+
+        return $this->actionRequestForUriBuilder;
     }
 
     /**
@@ -496,22 +563,11 @@ class NodeRedirectService
             return $this->uriBuilder;
         }
 
-        /** @var HttpRequestHandlerInterface $requestHandler */
-        $requestHandler = $this->bootstrap->getActiveRequestHandler();
-        if (method_exists(ActionRequest::class, 'fromHttpRequest')) {
-            // From Flow 6+ we have to use a static method to create an ActionRequest. Earlier versions use the constructor.
-            $actionRequest = ActionRequest::fromHttpRequest($requestHandler->getHttpRequest());
-        } else {
-            // This can be cleaned up when this package in a future release only support Flow 6+.
-            $actionRequest = new ActionRequest($requestHandler->getHttpRequest());
-        }
-
         $this->uriBuilder = new UriBuilder();
         $this->uriBuilder
-            ->setRequest($actionRequest);
-        $this->uriBuilder
             ->setFormat('html')
-            ->setCreateAbsoluteUri(false);
+            ->setCreateAbsoluteUri(false)
+            ->setRequest($this->getActionRequestForUriBuilder());
 
         return $this->uriBuilder;
     }
