@@ -24,7 +24,6 @@ use Neos\Flow\Cli\CommandRequestHandler;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Http\HttpRequestHandlerInterface;
 use Neos\Flow\Mvc\ActionRequest;
-use Neos\Flow\Mvc\ActionRequestFactory;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Mvc\Routing\RouterCachingService;
 use Neos\Flow\Mvc\Routing\UriBuilder;
@@ -89,12 +88,6 @@ class NodeRedirectService
      * @Flow\Inject
      */
     protected $bootstrap;
-
-    /**
-     * @var ActionRequestFactory
-     * @Flow\Inject
-     */
-    protected $actionRequestFactory;
 
     /**
      * @Flow\InjectConfiguration(path="statusCode", package="Neos.RedirectHandler")
@@ -209,14 +202,24 @@ class NodeRedirectService
             // Prevent `index.php` appearing in generated redirects
             putenv('FLOW_REWRITEURLS=1');
 
-            $serverRequest = new ServerRequest('POST', $baseUri);
-            $this->actionRequestForUriBuilder = $this->actionRequestFactory->createActionRequest($serverRequest);
-        } elseif (method_exists(ActionRequest::class, 'fromHttpRequest')) {
-            // From Flow 6+ we have to use a static method to create an ActionRequest. Earlier versions use the constructor.
-            $this->actionRequestForUriBuilder = ActionRequest::fromHttpRequest($requestHandler->getHttpRequest());
+            $httpRequest = new ServerRequest('POST', $baseUri);
         } else {
-            // This can be cleaned up when this package in a future release only support Flow 6+.
-            $this->actionRequestForUriBuilder = new ActionRequest($requestHandler->getHttpRequest());
+            $httpRequest = $requestHandler->getHttpRequest();
+        }
+
+        if (method_exists(ActionRequest::class, 'fromHttpRequest')) {
+            // From Flow 6+ we have to use a static method to create an ActionRequest. Earlier versions use the constructor.
+            $this->actionRequestForUriBuilder = ActionRequest::fromHttpRequest($httpRequest);
+        } else {
+            /* @deprecated This case can be removed up when this package only supports Flow 6+. */
+            if ($httpRequest instanceof ServerRequest) {
+                $httpRequest = new \Neos\Flow\Http\Request([], [], [], [
+                    'HTTP_HOST' => $httpRequest->getHeaderLine('host'),
+                    'HTTPS' => $httpRequest->getHeaderLine('scheme') === 'https',
+                    'REQUEST_URI' => $httpRequest->getHeaderLine('path'),
+                ]);
+            }
+            $this->actionRequestForUriBuilder = new ActionRequest($httpRequest);
         }
 
         return $this->actionRequestForUriBuilder;
