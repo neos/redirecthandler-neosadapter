@@ -28,8 +28,8 @@ use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Mvc\Routing\RouterCachingService;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
+use Neos\Neos\Controller\CreateContentContextTrait;
 use Neos\Neos\Domain\Model\Domain;
-use Neos\Neos\Domain\Service\ContentContext;
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
 use Psr\Log\LoggerInterface;
 
@@ -42,6 +42,8 @@ use Psr\Log\LoggerInterface;
  */
 class NodeRedirectService
 {
+    use CreateContentContextTrait;
+
     /**
      * @var UriBuilder
      */
@@ -366,10 +368,9 @@ class NodeRedirectService
             return false;
         }
 
-        $hosts = $this->getHostnames($node->getContext());
+        $hosts = $this->getHostnames($node);
         $this->flushRoutingCacheForNode($node);
         $statusCode = (integer)$this->defaultStatusCode['redirect'];
-
         $this->redirectStorage->addRedirect($oldUri, $newUri, $statusCode, $hosts);
 
         return true;
@@ -388,7 +389,7 @@ class NodeRedirectService
         // If it is deactivated in your settings you will be able to handle the redirects on your own.
         // For example redirect to dedicated landing pages for deleted campaign NodeTypes
         if ($this->enableRemovedNodeRedirect) {
-            $hosts = $this->getHostnames($node->getContext());
+            $hosts = $this->getHostnames($node);
             $this->flushRoutingCacheForNode($node);
             $statusCode = (integer)$this->defaultStatusCode['gone'];
             $this->redirectStorage->addRedirect($newUri, '', $statusCode, $hosts);
@@ -507,11 +508,12 @@ class NodeRedirectService
     /**
      * Collects all hostnames from the Domain entries attached to the current site.
      *
-     * @param ContentContext $contentContext
+     * @param NodeInterface $node
      * @return array
      */
-    protected function getHostnames(ContentContext $contentContext): array
+    protected function getHostnames(NodeInterface $node): array
     {
+        $contentContext = $this->createContextMatchingNodeData($node->getNodeData());
         $domains = [];
         $site = $contentContext->getCurrentSite();
         if ($site === null) {
