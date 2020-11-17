@@ -22,6 +22,7 @@ use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\CommandRequestHandler;
 use Neos\Flow\Core\Bootstrap;
+use Neos\Flow\Http\Exception as HttpException;
 use Neos\Flow\Http\HttpRequestHandlerInterface;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
@@ -140,12 +141,6 @@ class NodeRedirectService
     protected $baseUri;
 
     /**
-     * @Flow\InjectConfiguration(path="baseUriForAutomaticRedirects", package="Neos.RedirectHandler.NeosAdapter")
-     * @var string
-     */
-    protected $baseUriForAutomaticRedirects;
-
-    /**
      * @var array
      */
     protected $pendingRedirects = [];
@@ -165,7 +160,7 @@ class NodeRedirectService
      */
     public function collectPossibleRedirects(NodeInterface $node, Workspace $targetWorkspace): void
     {
-        if (!$this->enableAutomaticRedirects || !$this->getActionRequestForUriBuilder()) {
+        if (!$this->enableAutomaticRedirects) {
             return;
         }
 
@@ -181,7 +176,7 @@ class NodeRedirectService
      * based on a configured baseUri to allow redirect generation
      * for CLI requests.
      *
-     * @return ActionRequest|null
+     * @return ActionRequest
      */
     protected function getActionRequestForUriBuilder(): ?ActionRequest
     {
@@ -194,12 +189,7 @@ class NodeRedirectService
 
         if ($requestHandler instanceof CommandRequestHandler) {
             // Generate a custom request when the current request was triggered from CLI
-            $baseUri = $this->baseUriForAutomaticRedirects ?? $this->baseUri;
-
-            // Skip if no baseUri is available
-            if (!$baseUri) {
-                return null;
-            }
+            $baseUri = $this->baseUri ?? 'http://localhost';
 
             // Prevent `index.php` appearing in generated redirects
             putenv('FLOW_REWRITEURLS=1');
@@ -241,7 +231,7 @@ class NodeRedirectService
 
         $this->nodeFactory->reset();
         foreach ($this->pendingRedirects as $nodeIdentifierAndWorkspace => $oldUriPerDimensionCombination) {
-            list($nodeIdentifier, $workspaceName) = explode('@', $nodeIdentifierAndWorkspace);
+            [$nodeIdentifier, $workspaceName] = explode('@', $nodeIdentifierAndWorkspace);
             $this->buildRedirects($nodeIdentifier, $workspaceName, $oldUriPerDimensionCombination);
         }
 
@@ -332,7 +322,7 @@ class NodeRedirectService
      */
     protected function buildRedirects(string $nodeIdentifier, string $workspaceName, array $oldUriPerDimensionCombination): void
     {
-        foreach ($oldUriPerDimensionCombination as list($oldRelativeUri, $dimensionCombination)) {
+        foreach ($oldUriPerDimensionCombination as [$oldRelativeUri, $dimensionCombination]) {
             $this->createRedirectFrom($oldRelativeUri, $nodeIdentifier, $workspaceName, $dimensionCombination);
         }
     }
@@ -371,6 +361,7 @@ class NodeRedirectService
         $hosts = $this->getHostnames($node);
         $this->flushRoutingCacheForNode($node);
         $statusCode = (integer)$this->defaultStatusCode['redirect'];
+
         $this->redirectStorage->addRedirect($oldUri, $newUri, $statusCode, $hosts);
 
         return true;
@@ -550,6 +541,7 @@ class NodeRedirectService
      * @param NodeInterface $node
      * @return string the resulting (relative) URI
      * @throws MissingActionNameException
+     * @throws HttpException
      */
     protected function buildUriPathForNode(NodeInterface $node): string
     {
