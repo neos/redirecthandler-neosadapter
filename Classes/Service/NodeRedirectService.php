@@ -234,6 +234,7 @@ class NodeRedirectService
             [$nodeIdentifier, $workspaceName] = explode('@', $nodeIdentifierAndWorkspace);
             $this->buildRedirects($nodeIdentifier, $workspaceName, $oldUriPerDimensionCombination);
         }
+        $this->pendingRedirects = [];
 
         $this->persistenceManager->persistAll();
     }
