@@ -1,0 +1,25 @@
+# Behat distribution configuration
+#
+# Override with behat.yml for local configuration.
+#
+default:
+  autoload:
+    '': "%paths.base%/Features/Bootstrap"
+  suites:
+    content:
+        paths:
+          - "%paths.base%/Features"
+        contexts:
+          - FeatureContext
+  extensions:
+    Behat\MinkExtension:
+      files_path: features/Resources
+      show_cmd: 'open %s'
+      goutte: ~
+      selenium2: ~
+
+      # Project base URL
+      #
+      # Use BEHAT_PARAMS="extensions[Behat\MinkExtension\Extension][base_url]=http://example.local/" for configuration during runtime.
+      #
+      base_url: http://neos5.behat.test/
