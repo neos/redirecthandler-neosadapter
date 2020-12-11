@@ -24,7 +24,9 @@ use Neos\Flow\Cli\CommandRequestHandler;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Http\Exception as HttpException;
 use Neos\Flow\Http\HttpRequestHandlerInterface;
+use Neos\Flow\Http\ServerRequestAttributes;
 use Neos\Flow\Mvc\ActionRequest;
+use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Mvc\Routing\RouterCachingService;
 use Neos\Flow\Mvc\Routing\UriBuilder;
@@ -200,6 +202,8 @@ class NodeRedirectService
         }
 
         if (method_exists(ActionRequest::class, 'fromHttpRequest')) {
+            $routeParameters = $httpRequest->getAttribute(ServerRequestAttributes::ROUTING_PARAMETERS) ?? RouteParameters::createEmpty();
+            $httpRequest = $httpRequest->withAttribute(ServerRequestAttributes::ROUTING_PARAMETERS, $routeParameters->withParameter('requestUriHost', $httpRequest->getUri()->getHost()));
             // From Flow 6+ we have to use a static method to create an ActionRequest. Earlier versions use the constructor.
             $this->actionRequestForUriBuilder = ActionRequest::fromHttpRequest($httpRequest);
         } else {

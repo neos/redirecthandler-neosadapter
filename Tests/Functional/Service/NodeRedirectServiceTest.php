@@ -128,6 +128,7 @@ class NodeRedirectServiceTest extends FunctionalTestCase
         $this->site = $sites->createNode('site', $this->nodeTypeManager->getNodeType('Neos.Neos:Document'), 'site');
         $site = new Site('site');
         $site->setSiteResourcesPackageKey('My.Package');
+        $site->setState(Site::STATE_ONLINE);
         $this->siteRepository->add($site);
     }
 
