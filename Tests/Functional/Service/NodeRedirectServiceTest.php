@@ -19,13 +19,13 @@ use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Exception\NodeExistsException;
 use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
+use Neos\Flow\Tests\FunctionalTestCase;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\Service\ContentContext;
 use Neos\Neos\Domain\Service\ContentContextFactory;
 use Neos\Neos\Service\PublishingService;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
-use Neos\Flow\Tests\FunctionalTestCase;
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -128,6 +128,7 @@ class NodeRedirectServiceTest extends FunctionalTestCase
         $this->site = $sites->createNode('site', $this->nodeTypeManager->getNodeType('Neos.Neos:Document'), 'site');
         $site = new Site('site');
         $site->setSiteResourcesPackageKey('My.Package');
+        $site->setState(Site::STATE_ONLINE);
         $this->siteRepository->add($site);
     }
 
@@ -145,13 +146,22 @@ class NodeRedirectServiceTest extends FunctionalTestCase
      * @throws NodeExistsException
      * @throws NodeTypeNotFoundException
      */
-    public function createRedirectsForPublishedNodeCreatesRedirectFromPreviousUriWhenMovingDocumentDown()
+    public function createRedirectsForPublishedNodeCreatesRedirectFromPreviousUriWhenMovingDocumentDown(): void
     {
         $documentNodeType = $this->nodeTypeManager->getNodeType('Neos.Neos:Document');
 
-        $this->mockRedirectStorage->expects($this->exactly(1))
+        $count = 0;
+        $this->mockRedirectStorage
             ->method('addRedirect')
-            ->with('/en/document.html', '/en/outer/document.html');
+            ->willReturnCallback(function ($sourceUri, $targetUri, $statusCode, $hosts) use (&$count) {
+                if ($sourceUri === '/en/document.html') {
+                    self::assertSame('/en/outer/document.html', $targetUri);
+                    self::assertSame(301, $statusCode);
+                    self::assertSame([], $hosts);
+                    $count++;
+                }
+                return [];
+            });
 
         $outerDocument = $this->site->createNode('outer', $documentNodeType);
         $outerDocument->setProperty('uriPathSegment', 'outer');
@@ -162,6 +172,9 @@ class NodeRedirectServiceTest extends FunctionalTestCase
         $documentToBeMoved->moveInto($outerDocument);
 
         $this->publishingService->publishNode($documentToBeMoved);
+        $this->persistenceManager->persistAll();
+
+        self::assertSame(1, $count, 'The primary redirect should have been created');
     }
 
     /**
@@ -169,13 +182,22 @@ class NodeRedirectServiceTest extends FunctionalTestCase
      * @throws NodeExistsException
      * @throws NodeTypeNotFoundException
      */
-    public function createRedirectsForPublishedNodeCreatesRedirectFromPreviousUriWhenMovingDocumentUp()
+    public function createRedirectsForPublishedNodeCreatesRedirectFromPreviousUriWhenMovingDocumentUp(): void
     {
         $documentNodeType = $this->nodeTypeManager->getNodeType('Neos.Neos:Document');
 
-        $this->mockRedirectStorage->expects($this->exactly(1))
+        $count = 0;
+        $this->mockRedirectStorage
             ->method('addRedirect')
-            ->with('/en/outer/document.html', '/en/document.html');
+            ->willReturnCallback(function ($sourceUri, $targetUri, $statusCode, $hosts) use (&$count) {
+                if ($sourceUri === '/en/outer/document.html') {
+                    self::assertSame('/en/document.html', $targetUri);
+                    self::assertSame(301, $statusCode);
+                    self::assertSame([], $hosts);
+                    $count++;
+                }
+                return [];
+            });
 
         $outerDocument = $this->site->createNode('outer', $documentNodeType);
         $outerDocument->setProperty('uriPathSegment', 'outer');
@@ -186,6 +208,9 @@ class NodeRedirectServiceTest extends FunctionalTestCase
         $documentToBeMoved->moveInto($this->site);
 
         $this->publishingService->publishNode($documentToBeMoved);
+        $this->persistenceManager->persistAll();
+
+        self::assertSame(1, $count, 'The primary redirect should have been created');
     }
 
     /**
@@ -193,21 +218,28 @@ class NodeRedirectServiceTest extends FunctionalTestCase
      * @throws NodeExistsException
      * @throws NodeTypeNotFoundException
      */
-    public function createRedirectsForPublishedNodeLeavesUpwardRedirectWhenMovingDocumentDownAndUp()
+    public function createRedirectsForPublishedNodeLeavesUpwardRedirectWhenMovingDocumentDownAndUp(): void
     {
         $documentNodeType = $this->nodeTypeManager->getNodeType('Neos.Neos:Document');
 
-        $this->mockRedirectStorage->expects($this->exactly(2))
+        $countA = 0;
+        $countB = 0;
+        $this->mockRedirectStorage
             ->method('addRedirect')
-            ->with($this->logicalOr(
-                $this->equalTo('/en/document.html'),
-                $this->equalTo('/en/outer/document.html')
-            ),
-                $this->logicalOr(
-                    $this->equalTo('/en/outer/document.html'),
-                    $this->equalTo('/en/document.html')
-                )
-            );
+            ->willReturnCallback(function ($sourceUri, $targetUri, $statusCode, $hosts) use (&$countA, &$countB) {
+                if ($sourceUri === '/en/outer/document.html') {
+                    self::assertSame('/en/document.html', $targetUri);
+                    self::assertSame(301, $statusCode);
+                    self::assertSame([], $hosts);
+                    $countA++;
+                } elseif ($sourceUri === '/en/document.html') {
+                    self::assertSame('/en/outer/document.html', $targetUri);
+                    self::assertSame(301, $statusCode);
+                    self::assertSame([], $hosts);
+                    $countB++;
+                }
+                return [];
+            });
 
         $outerDocument = $this->site->createNode('outer', $documentNodeType, 'outer');
         $outerDocument->setProperty('uriPathSegment', 'outer');
@@ -217,12 +249,15 @@ class NodeRedirectServiceTest extends FunctionalTestCase
         $documentToBeMoved = $this->userContext->adoptNode($document);
         $documentToBeMoved->moveInto($this->userContext->getNodeByIdentifier('outer'));
         $this->publishingService->publishNode($documentToBeMoved);
-        $this->nodeDataRepository->persistEntities();
+        $this->persistenceManager->persistAll();
 
         $documentToBeMoved = $this->userContext->adoptNode($outerDocument->getNode('document'));
         $documentToBeMoved->moveInto($this->userContext->getNodeByIdentifier('site'));
 
         $this->publishingService->publishNode($documentToBeMoved);
-        $this->nodeDataRepository->persistEntities();
+        $this->persistenceManager->persistAll();
+
+        self::assertSame(1, $countA, 'The primary redirect should have been created');
+        self::assertSame(1, $countB, 'The secondary redirect should have been created');
     }
 }

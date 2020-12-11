@@ -165,3 +165,18 @@ If you have the `Neos.RedirectHandler.Ui` [package](https://github.com/neos/redi
 you can also export the redirects via the UI in the redirect handler backend module.
 
 The same restrictions and requirements apply as for the import via the CLI.
+
+
+===========================================
+Redirect generation when publishing via CLI
+===========================================
+
+When publishing nodes from CLI f.e. via `flow workspace:publish` you might need additional configuration
+to make sure that redirects are properly generated.
+As commands don't have a http request, a fake http request has to be generated to make the url generation work.
+In this case the setting `Neos.Flow.http.baseUri` will be used.
+If this is not set `http://localhost` is used.
+
+This should not be a problem in most cases as without an active domain for a site
+only relative redirects are generated.
+If a site has an active domain this on will be used to set the `Origin domain` for a new redirect.

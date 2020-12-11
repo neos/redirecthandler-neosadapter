@@ -1,0 +1,55 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    env:
+      FLOW_TARGET_VERSION: 6.3
+      FLOW_CONTEXT: Testing
+      FLOW_FOLDER: ../flow-base-distribution
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Update Composer
+      run: |
+        sudo composer self-update
+        composer --version
+
+    # Directory permissions for .composer are wrong, so we remove the complete directory
+    # https://github.com/actions/virtual-environments/issues/824
+    - name: Delete .composer directory
+      run: |
+        sudo rm -rf ~/.composer
+
+    - name: Cache dependencies
+      uses: actions/cache@v1
+      with:
+        path: ~/.composer/cache
+        key: dependencies-composer-${{ hashFiles('composer.json') }}
+
+    - name: Prepare Flow distribution
+      run: |
+        git clone https://github.com/neos/flow-base-distribution.git -b ${FLOW_TARGET_VERSION} ${FLOW_FOLDER}
+        cd ${FLOW_FOLDER}
+        composer require --no-update --no-interaction neos/redirecthandler-databasestorage:~4.0
+        composer require --no-update --no-interaction neos/redirecthandler-neosadapter:~4.0
+
+    - name: Install distribution
+      run: |
+        cd ${FLOW_FOLDER}
+        composer install --no-interaction --no-progress
+        rm -rf Packages/Application/Neos.RedirectHandler.NeosAdapter
+        cp -r ../redirecthandler-neosadapter Packages/Application/Neos.RedirectHandler.NeosAdapter
+
+    - name: Run Functional tests
+      run: |
+        cd ${FLOW_FOLDER}
+        bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Neos.RedirectHandler.NeosAdapter/Tests/Functional/*
