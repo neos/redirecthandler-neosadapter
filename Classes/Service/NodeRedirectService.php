@@ -202,8 +202,8 @@ class NodeRedirectService
         }
 
         if (method_exists(ActionRequest::class, 'fromHttpRequest')) {
-            $routeParameters = $httpRequest->getAttribute(ServerRequestAttributes::ROUTING_PARAMETERS) ?? RouteParameters::createEmpty();
-            $httpRequest = $httpRequest->withAttribute(ServerRequestAttributes::ROUTING_PARAMETERS, $routeParameters->withParameter('requestUriHost', $httpRequest->getUri()->getHost()));
+            $routeParameters = $httpRequest->getAttribute('routingParameters') ?? RouteParameters::createEmpty();
+            $httpRequest = $httpRequest->withAttribute('routingParameters', $routeParameters->withParameter('requestUriHost', $httpRequest->getUri()->getHost()));
             // From Flow 6+ we have to use a static method to create an ActionRequest. Earlier versions use the constructor.
             $this->actionRequestForUriBuilder = ActionRequest::fromHttpRequest($httpRequest);
         } else {
