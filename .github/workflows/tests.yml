@@ -15,8 +15,21 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        php-versions: ['7.4']
+
     steps:
     - uses: actions/checkout@v2
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-versions }}
+        extensions: mbstring, xml, json, zlib, iconv, intl, pdo_sqlite, mysql
+        coverage: xdebug #optional
+        ini-values: opcache.fast_shutdown=0
 
     - name: Update Composer
       run: |
