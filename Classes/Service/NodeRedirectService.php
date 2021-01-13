@@ -24,7 +24,6 @@ use Neos\Flow\Cli\CommandRequestHandler;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Http\Exception as HttpException;
 use Neos\Flow\Http\HttpRequestHandlerInterface;
-use Neos\Flow\Http\ServerRequestAttributes;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
@@ -282,7 +281,11 @@ class NodeRedirectService
                 continue;
             }
 
-            $nodeUriPath = $this->buildUriPathForNode($nodeInDimensions);
+            try {
+                $nodeUriPath = $this->buildUriPathForNode($nodeInDimensions);
+            } catch (\Exception $_) {
+                continue;
+            }
             $nodeUriPath = $this->removeContextInformationFromRelativeNodeUri($nodeUriPath);
             $result[] = [
                 $nodeUriPath,
@@ -303,14 +306,23 @@ class NodeRedirectService
      */
     protected function hasNodeUriChanged(NodeInterface $node, Workspace $targetWorkspace): bool
     {
-        $newUriPath = $this->buildUriPathForNode($node);
-        $newUriPath = $this->removeContextInformationFromRelativeNodeUri($newUriPath);
-
         $nodeInTargetWorkspace = $this->getNodeInWorkspace($node, $targetWorkspace);
         if (!$nodeInTargetWorkspace) {
             return false;
         }
-        $oldUriPath = $this->buildUriPathForNode($nodeInTargetWorkspace);
+        try {
+            $newUriPath = $this->buildUriPathForNode($node);
+        } catch (\Exception $exception) {
+            $this->logger->info(sprintf('Failed to build new URI for updated node "%s": %s', $node->getContextPath(), $exception->getMessage()));
+            return false;
+        }
+        $newUriPath = $this->removeContextInformationFromRelativeNodeUri($newUriPath);
+        try {
+            $oldUriPath = $this->buildUriPathForNode($nodeInTargetWorkspace);
+        } catch (\Exception $exception) {
+            $this->logger->info(sprintf('Failed to build previous URI for updated node "%s": %s', $node->getContextPath(), $exception->getMessage()));
+            return false;
+        }
         $oldUriPath = $this->removeContextInformationFromRelativeNodeUri($oldUriPath);
 
         return ($newUriPath !== $oldUriPath);
@@ -353,7 +365,12 @@ class NodeRedirectService
             return false;
         }
 
-        $newUri = $this->buildUriPathForNode($node);
+        try {
+            $newUri = $this->buildUriPathForNode($node);
+        } catch (\Exception $exception) {
+            $this->logger->info(sprintf('Redirect creation skipped since URL for node "%s" could not be created and led to an exception: %s', $node->getContextPath(), $exception->getMessage()));
+            return false;
+        }
 
         if ($node->isRemoved()) {
             return $this->removeNodeRedirectIfNeeded($node, $newUri);
@@ -551,7 +568,7 @@ class NodeRedirectService
     protected function buildUriPathForNode(NodeInterface $node): string
     {
         return $this->getUriBuilder()
-            ->uriFor('show', ['node' => $node], 'Frontend\\Node', 'Neos.Neos');
+                ->uriFor('show', ['node' => $node], 'Frontend\\Node', 'Neos.Neos');
     }
 
     /**
