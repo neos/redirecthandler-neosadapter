@@ -13,11 +13,12 @@ namespace Neos\RedirectHandler\NeosAdapter;
  * source code.
  */
 
-use Neos\Flow\Persistence\Doctrine\PersistenceManager;
-use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
+use Neos\EventStore\Model\EventEnvelope;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Package\Package as BasePackage;
-use Neos\ContentRepository\Domain\Model\Workspace;
+use Neos\Neos\Domain\Model\SiteNodeName;
+use Neos\Neos\FrontendRouting\Projection\DocumentUriPathProjection;
+use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
 
 /**
  * The Neos RedirectHandler NeosAdapter Package
@@ -32,7 +33,26 @@ class Package extends BasePackage
     {
         $dispatcher = $bootstrap->getSignalSlotDispatcher();
 
-        $dispatcher->connect(Workspace::class, 'beforeNodePublishing', NodeRedirectService::class, 'collectPossibleRedirects');
-        $dispatcher->connect(PersistenceManager::class, 'allObjectsPersisted', NodeRedirectService::class, 'createPendingRedirects');
+        $dispatcher->connect(DocumentUriPathProjection::class, 'afterNodeAggregateWasMoved', function (
+            string $oldUriPath, string $newUriPath, SiteNodeName $siteNodeName, $_,
+        ) use ($bootstrap) {
+            $nodeRedirectService = $bootstrap->getObjectManager()->get(NodeRedirectService::class);
+            $nodeRedirectService->createRedirect($oldUriPath, $newUriPath, $siteNodeName);
+        });
+
+        $dispatcher->connect(DocumentUriPathProjection::class, 'afterNodeAggregateWasRemoved', function (
+            string $oldUriPath, SiteNodeName $siteNodeName, $_,
+        ) use ($bootstrap) {
+            $nodeRedirectService = $bootstrap->getObjectManager()->get(NodeRedirectService::class);
+            $nodeRedirectService->createRedirect($oldUriPath, null, $siteNodeName);
+        });
+
+        $dispatcher->connect(DocumentUriPathProjection::class, 'afterDocumentUriPathChanged', function (
+            string $oldUriPath, string $newUriPath, SiteNodeName $siteNodeName, $_, EventEnvelope $eventEnvelope,
+        ) use ($bootstrap) {
+            $nodeRedirectService = $bootstrap->getObjectManager()->get(NodeRedirectService::class);
+            $nodeRedirectService->createRedirect($oldUriPath, $newUriPath, $siteNodeName);
+        });
+
     }
 }

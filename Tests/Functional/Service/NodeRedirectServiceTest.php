@@ -62,27 +62,27 @@ class NodeRedirectServiceTest extends FunctionalTestCase
     protected $nodeDataRepository;
 
     /**
-     * @var NodeTypeManager
+     * @var \Neos\ContentRepository\Core\NodeType\NodeTypeManager
      */
     protected $nodeTypeManager;
 
     /**
-     * @var Workspace
+     * @var \Neos\ContentRepository\Core\Projection\Workspace\Workspace
      */
     protected $liveWorkspace;
 
     /**
-     * @var Workspace
+     * @var \Neos\ContentRepository\Core\Projection\Workspace\Workspace
      */
     protected $userWorkspace;
 
     /**
-     * @var ContentContext
+     * @var \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub
      */
     protected $userContext;
 
     /**
-     * @var NodeInterface
+     * @var \Neos\ContentRepository\Core\Projection\ContentGraph\Node
      */
     protected $site;
 
@@ -111,10 +111,10 @@ class NodeRedirectServiceTest extends FunctionalTestCase
         $this->mockRedirectStorage = $this->getMockBuilder(RedirectStorageInterface::class)->getMock();
         $this->inject($this->nodeRedirectService, 'redirectStorage', $this->mockRedirectStorage);
         $this->contentContextFactory = $this->objectManager->get(ContentContextFactory::class);
-        $this->nodeTypeManager = $this->objectManager->get(NodeTypeManager::class);
+        $this->nodeTypeManager = $this->objectManager->get(\Neos\ContentRepository\Core\NodeType\NodeTypeManager::class);
         $this->workspaceRepository = $this->objectManager->get(WorkspaceRepository::class);
-        $this->liveWorkspace = new Workspace('live');
-        $this->userWorkspace = new Workspace('user-me', $this->liveWorkspace);
+        $this->liveWorkspace = new \Neos\ContentRepository\Core\Projection\Workspace\Workspace('live');
+        $this->userWorkspace = new \Neos\ContentRepository\Core\Projection\Workspace\Workspace('user-me', $this->liveWorkspace);
         $this->workspaceRepository->add($this->liveWorkspace);
         $this->workspaceRepository->add($this->userWorkspace);
         $liveContext = $this->contentContextFactory->create([

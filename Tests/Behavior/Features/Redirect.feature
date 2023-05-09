@@ -1,129 +1,254 @@
-Feature: Redirects are created automatically when the URI of an existing node is changed
+@fixtures @contentrepository
+Feature: Basic redirect handling with document nodes in one dimension
+
   Background:
-    Given I am authenticated with role "Neos.Neos:Editor"
-    And  I have the following content dimensions:
-      | Identifier | Default | Presets                |
-      | language   | en      | en=en; de=de,en; fr=fr |
-    And I have the following nodes:
-      | Identifier                           | Path                   | Node Type                  | Properties                                | Workspace | Hidden | Language      |
-      | ecf40ad1-3119-0a43-d02e-55f8b5aa3c70 | /sites                 | unstructured               |                                           | live      |        |               |
-      | fd5ba6e1-4313-b145-1004-dad2f1173a35 | /sites/behat           | Neos.Neos:Document         | {"uriPathSegment": "home"}                | live      |        | en            |
-      | 68ca0dcd-2afb-ef0e-1106-a5301e65b8a0 | /sites/behat/company   | Neos.Neos:Document         | {"uriPathSegment": "company"}             | live      |        | en            |
-      | 52540602-b417-11e3-9358-14109fd7a2dd | /sites/behat/service   | Neos.Neos:Document         | {"uriPathSegment": "service"}             | live      |        | en            |
-      | dc48851c-f653-ebd5-4d35-3feac69a3e09 | /sites/behat/about     | Neos.Neos:Document         | {"uriPathSegment": "about"}               | live      |        | en            |
-      | 511e9e4b-2193-4100-9a91-6fde2586ae95 | /sites/behat/imprint   | Neos.Neos:Document         | {"uriPathSegment": "impressum"}           | live      |        | de            |
-      | 511e9e4b-2193-4100-9a91-6fde2586ae95 | /sites/behat/imprint   | Neos.Neos:Document         | {"uriPathSegment": "imprint"}             | live      |        | en            |
-      | 511e9e4b-2193-4100-9a91-6fde2586ae95 | /sites/behat/imprint   | Neos.Neos:Document         | {"uriPathSegment": "empreinte"}           | live      |        | fr            |
-      | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy       | Neos.Neos:Document         | {"uriPathSegment": "buy", "title": "Buy"} | live      |        | en            |
-      | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy       | Neos.Neos:Document         | {"uriPathSegment": "acheter"}             | live      |        | fr            |
-      | 4bba27c8-5029-4ae6-8371-0f2b3e1700a9 | /sites/behat/buy       | Neos.Neos:Document         | {"uriPathSegment": "kaufen"}              | live      | true   | de            |
-      | 81dc6c8c-f478-434c-9ac9-bd5d1781cd95 | /sites/behat/mail      | Neos.Neos:Document         | {"uriPathSegment": "mail"}                | live      |        | en            |
-      | 81dc6c8c-f478-434c-9ac9-bd5d1781cd95 | /sites/behat/mail      | Neos.Neos:Document         | {"uriPathSegment": "mail"}                | live      | true   | de            |
+    Given I have no content dimensions
+    And I am user identified by "initiating-user-identifier"
+    And the command CreateRootWorkspace is executed with payload:
+      | Key                | Value           |
+      | workspaceName      | "live"          |
+      | newContentStreamId | "cs-identifier" |
+    And the event RootNodeAggregateWithNodeWasCreated was published with payload:
+      | Key                         | Value             |
+      | contentStreamId             | "cs-identifier"   |
+      | nodeAggregateId             | "site-root"       |
+      | nodeTypeName                | "Neos.Neos:Sites" |
+      | coveredDimensionSpacePoints | [{}]              |
+      | nodeAggregateClassification | "root"            |
+    And the graph projection is fully up to date
+
+    # site-root
+    #   behat
+    #      company
+    #        service
+    #        about
+    #      imprint
+    #      buy
+    #      mail
+    And I am in content stream "cs-identifier" and dimension space point {}
+    And the following CreateNodeAggregateWithNode commands are executed:
+      | nodeAggregateId        | parentNodeAggregateId | nodeTypeName                           | initialPropertyValues                        | nodeName |
+      | behat                  | site-root             | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "home"}                   | node1    |
+      | company                | behat                 | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "company"}                | node2    |
+      | service                | company               | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "service"}                | node3    |
+      | about                  | company               | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "about"}                  | node4    |
+      | imprint                | behat                 | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "imprint"}                | node5    |
+      | buy                    | behat                 | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "buy", "title": "Buy"}    | node6    |
+      | mail                   | behat                 | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "mail"}                   | node7    |
+      | restricted-by-nodetype | behat                 | Neos.Neos:Test.Redirect.RestrictedPage | {"uriPathSegment": "restricted-by-nodetype"} | node8    |
+      | restricted-by-path     | behat                 | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "restricted-by-path"}     | node9    |
+    And A site exists for node name "node1"
+    And the sites configuration is:
+    """
+    Neos:
+      Neos:
+        sites:
+          '*':
+            contentRepository: default
+            contentDimensions:
+              resolver:
+                factoryClassName: Neos\Neos\FrontendRouting\DimensionResolution\Resolver\NoopResolverFactory
+    """
+    And The documenturipath projection is up to date
 
   @fixtures
-  Scenario: Move a node into different node and a redirect will be created
-    When I get a node by path "/sites/behat/service" with the following context:
-      | Workspace         |
-      | user-testaccount  |
-    And I move the node into the node with path "/sites/behat/company"
-    And I publish the node
-    Then I should have a redirect with sourceUri "en/service.html" and targetUri "en/company/service.html"
+  Scenario: Move a node down into different node and a redirect will be created
+    When the command MoveNodeAggregate is executed with payload:
+      | Key                                 | Value           |
+      | contentStreamId                     | "cs-identifier" |
+      | nodeAggregateId                     | "imprint"       |
+      | dimensionSpacePoint                 | {}              |
+      | newParentNodeAggregateId            | "company"       |
+      | newSucceedingSiblingNodeAggregateId | null            |
+    And The documenturipath projection is up to date
+    Then I should have a redirect with sourceUri "imprint" and targetUri "company/imprint"
+
+  Scenario: Move a node up into different node and a redirect will be created
+    When the command MoveNodeAggregate is executed with payload:
+      | Key                                 | Value           |
+      | contentStreamId                     | "cs-identifier" |
+      | nodeAggregateId                     | "service"       |
+      | dimensionSpacePoint                 | {}              |
+      | newParentNodeAggregateId            | "behat"         |
+      | newSucceedingSiblingNodeAggregateId | null            |
+    And The documenturipath projection is up to date
+    Then I should have a redirect with sourceUri "company/service" and targetUri "service"
 
   @fixtures
   Scenario: Change the the `uriPathSegment` and a redirect will be created
-    When I get a node by path "/sites/behat/company" with the following context:
-      | Workspace        |
-      | user-testaccount |
-    And I set the node property "uriPathSegment" to "evil-corp"
-    And I publish the node
-    Then I should have a redirect with sourceUri "en/company.html" and targetUri "en/evil-corp.html"
-
-  #fixed in 1.0.2
-  @fixtures
-  Scenario: Retarget an existing redirect when the target URI matches the source URI of the new redirect
-    When I get a node by path "/sites/behat/about" with the following context:
-      | Workspace        |
-      | user-testaccount |
-    And I have the following redirects:
-      | sourceuripath                           | targeturipath      |
-      | en/about.html                           | en/about-you.html  |
-    And I set the node property "uriPathSegment" to "about-me"
-    And I publish the node
-    And I should have a redirect with sourceUri "en/about.html" and targetUri "en/about-me.html"
+    When the command SetNodeProperties is executed with payload:
+      | Key                       | Value                           |
+      | contentStreamId           | "cs-identifier"                 |
+      | nodeAggregateId           | "company"                       |
+      | originDimensionSpacePoint | {}                              |
+      | propertyValues            | {"uriPathSegment": "evil-corp"} |
+    And The documenturipath projection is up to date
+    Then I should have a redirect with sourceUri "company" and targetUri "evil-corp"
+    And I should have a redirect with sourceUri "company/service" and targetUri "evil-corp/service"
 
   @fixtures
-  Scenario: Redirects should aways be created in the same dimension the node is in
-    When I get a node by path "/sites/behat/imprint" with the following context:
-      | Workspace        | Language |
-      | user-testaccount | fr       |
-    And I set the node property "uriPathSegment" to "empreinte-nouveau"
-    And I publish the node
-    Then I should have a redirect with sourceUri "fr/empreinte.html" and targetUri "fr/empreinte-nouveau.html"
+  Scenario: Change the the `uriPathSegment` mutiple times and mutliple redirects will be created
+    When the command SetNodeProperties is executed with payload:
+      | Key                       | Value                           |
+      | contentStreamId           | "cs-identifier"                 |
+      | nodeAggregateId           | "company"                       |
+      | originDimensionSpacePoint | {}                              |
+      | propertyValues            | {"uriPathSegment": "evil-corp"} |
+    And the command SetNodeProperties is executed with payload:
+      | Key                       | Value                                |
+      | contentStreamId           | "cs-identifier"                      |
+      | nodeAggregateId           | "company"                            |
+      | originDimensionSpacePoint | {}                                   |
+      | propertyValues            | {"uriPathSegment": "more-evil-corp"} |
+    And The documenturipath projection is up to date
 
-  #fixed in 1.0.3
-  @fixtures
-  Scenario: Redirects should aways be created in the same dimension the node is in and not the fallback dimension
-    When I get a node by path "/sites/behat/imprint" with the following context:
-      | Workspace        | Language |
-      | user-testaccount | de,en    |
-    And I set the node property "uriPathSegment" to "impressum-neu"
-    And I publish the node
-    Then I should have a redirect with sourceUri "de/impressum.html" and targetUri "de/impressum-neu.html"
-    And I should have no redirect with sourceUri "en/impressum.html" and targetUri "de/impressum-neu.html"
+    Then I should have a redirect with sourceUri "company" and targetUri "more-evil-corp"
+    And I should have a redirect with sourceUri "company/service" and targetUri "more-evil-corp/service"
+    And I should have a redirect with sourceUri "evil-corp" and targetUri "more-evil-corp"
+    And I should have a redirect with sourceUri "evil-corp/service" and targetUri "more-evil-corp/service"
 
-  #fixed in 1.0.3
+
   @fixtures
-  Scenario: I have an existing redirect and it should never be overwritten for a node variant from a different dimension
+  Scenario: Retarget an existing redirect when the source URI matches the source URI of the new redirect
     When I have the following redirects:
-      | sourceuripath                           | targeturipath      |
-      | important-page-from-the-old-site        | en/mail.html       |
-    When I get a node by path "/sites/behat/mail" with the following context:
-      | Workspace        | Language |
-      | user-testaccount | de,en    |
-    And I unhide the node
-    And I publish the node
-    Then I should have a redirect with sourceUri "important-page-from-the-old-site" and targetUri "en/mail.html"
-    And I should have no redirect with sourceUri "en/mail.html" and targetUri "de/mail.html"
+      | sourceuripath | targeturipath |
+      | company       | company-old   |
+    And the command SetNodeProperties is executed with payload:
+      | Key                       | Value                            |
+      | contentStreamId           | "cs-identifier"                  |
+      | nodeAggregateId           | "company"                        |
+      | originDimensionSpacePoint | {}                               |
+      | propertyValues            | {"uriPathSegment": "my-company"} |
+    And The documenturipath projection is up to date
+    Then I should have a redirect with sourceUri "company" and targetUri "my-company"
+    And I should have no redirect with sourceUri "company" and targetUri "company-old"
+    And I should have a redirect with sourceUri "company/service" and targetUri "my-company/service"
 
   @fixtures
   Scenario: No redirect should be created for an existing node if any non URI related property changes
-    When I get a node by path "/sites/behat/buy" with the following context:
-      | Workspace        |
-      | user-testaccount |
-    And I set the node property "title" to "Buy later"
-    And I publish the node
-    Then I should have no redirect with sourceUri "en/buy.html"
+    When the command SetNodeProperties is executed with payload:
+      | Key                       | Value               |
+      | contentStreamId           | "cs-identifier"     |
+      | nodeAggregateId           | "buy"               |
+      | originDimensionSpacePoint | {}                  |
+      | propertyValues            | {"title": "my-buy"} |
+    And The documenturipath projection is up to date
+    Then I should have no redirect with sourceUri "buy"
+
+  @fixtures
+  Scenario: No redirect should be created for an restricted node by nodetype
+    When the command SetNodeProperties is executed with payload:
+      | Key                       | Value                                            |
+      | contentStreamId           | "cs-identifier"                                  |
+      | nodeAggregateId           | "restricted-by-nodetype"                         |
+      | originDimensionSpacePoint | {}                                               |
+      | propertyValues            | {"uriPathSegment": "restricted-by-nodetype-new"} |
+    And The documenturipath projection is up to date
+    Then I should have no redirect with sourceUri "restricted"
+
+
+  @fixtures
+  Scenario: No redirect should be created for an restricted node by path
+    When the command SetNodeProperties is executed with payload:
+      | Key                       | Value                                        |
+      | contentStreamId           | "cs-identifier"                              |
+      | nodeAggregateId           | "restricted-by-path"                         |
+      | originDimensionSpacePoint | {}                                           |
+      | propertyValues            | {"uriPathSegment": "restricted-by-path-new"} |
+    And The documenturipath projection is up to date
+    Then I should have no redirect with sourceUri "restricted-by-path"
+
+#  @fixtures
+#  Scenario: Redirects should always be created in the same dimension the node is in
+#    When I get a node by path "/sites/behat/imprint" with the following context:
+#      | Workspace        | Language |
+#      | user-testaccount | fr       |
+#    And I set the node property "uriPathSegment" to "empreinte-nouveau"
+#    And I publish the node
+#    Then I should have a redirect with sourceUri "fr/empreinte" and targetUri "fr/empreinte-nouveau"
+#
+#  #fixed in 1.0.3
+#  @fixtures
+#  Scenario: Redirects should aways be created in the same dimension the node is in and not the fallback dimension
+#    When I get a node by path "/sites/behat/imprint" with the following context:
+#      | Workspace        | Language |
+#      | user-testaccount | de,en    |
+#    And I set the node property "uriPathSegment" to "impressum-neu"
+#    And I publish the node
+#    Then I should have a redirect with sourceUri "de/impressum" and targetUri "de/impressum-neu"
+#    And I should have no redirect with sourceUri "en/impressum" and targetUri "de/impressum-neu"
+#
+#  #fixed in 1.0.3
+#  @fixtures
+#  Scenario: I have an existing redirect and it should never be overwritten for a node variant from a different dimension
+#    When I have the following redirects:
+#      | sourceuripath                           | targeturipath      |
+#      | important-page-from-the-old-site        | en/mail       |
+#    When I get a node by path "/sites/behat/mail" with the following context:
+#      | Workspace        | Language |
+#      | user-testaccount | de,en    |
+#    And I unhide the node
+#    And I publish the node
+#    Then I should have a redirect with sourceUri "important-page-from-the-old-site" and targetUri "en/mail"
+#    And I should have no redirect with sourceUri "en/mail" and targetUri "de/mail"
+#
 
   @fixtures
   Scenario: Redirects should be created for a hidden node
-    When I get a node by path "/sites/behat/buy" with the following context:
-      | Workspace        | Language |
-      | user-testaccount | de,en    |
-    And I set the node property "uriPathSegment" to "nicht-kaufen"
-    And I publish the node
-    Then I should have a redirect with sourceUri "de/kaufen.html" and targetUri "de/nicht-kaufen.html"
+    When the command DisableNodeAggregate is executed with payload:
+      | Key                          | Value           |
+      | contentStreamId              | "cs-identifier" |
+      | nodeAggregateId              | "mail"          |
+      | originDimensionSpacePoint    | {}              |
+      | nodeVariantSelectionStrategy | "allVariants"   |
+    And the graph projection is fully up to date
+    When the command SetNodeProperties is executed with payload:
+      | Key                       | Value                          |
+      | contentStreamId           | "cs-identifier"                |
+      | nodeAggregateId           | "mail"                         |
+      | originDimensionSpacePoint | {}                             |
+      | propertyValues            | {"uriPathSegment": "not-mail"} |
+    And The documenturipath projection is up to date
+    Then I should have a redirect with sourceUri "mail" and targetUri "not-mail"
+
+#  @fixtures
+#  Scenario: Create redirects for nodes published in different dimensions
+#    When I get a node by path "/sites/behat/buy" with the following context:
+#      | Workspace        |
+#      | user-testaccount |
+#    And I move the node into the node with path "/sites/behat/company"
+#    And I publish the node
+#    When I get a node by path "/sites/behat/company/buy" with the following context:
+#      | Workspace        | Language |
+#      | user-testaccount | de,en    |
+#    And I publish the node
+#    Then I should have a redirect with sourceUri "en/buy" and targetUri "en/company/buy"
+#    And I should have a redirect with sourceUri "de/kaufen" and targetUri "de/company/kaufen"
+#
+#  #fixed in 1.0.4
+#  @fixtures
+#  Scenario: Create redirects for nodes that use the current dimension as fallback
+#    When I get a node by path "/sites/behat/company" with the following context:
+#      | Workspace        | Language |
+#      | user-testaccount | en       |
+#    And I move the node into the node with path "/sites/behat/service"
+#    And I publish the node
+#    Then I should have a redirect with sourceUri "en/company" and targetUri "en/service/company"
+#    And I should have a redirect with sourceUri "de/company" and targetUri "de/service/company"
+
 
   @fixtures
-  Scenario: Create redirects for nodes published in different dimensions
-    When I get a node by path "/sites/behat/buy" with the following context:
-      | Workspace        |
-      | user-testaccount |
-    And I move the node into the node with path "/sites/behat/company"
-    And I publish the node
-    When I get a node by path "/sites/behat/company/buy" with the following context:
-      | Workspace        | Language |
-      | user-testaccount | de,en    |
-    And I publish the node
-    Then I should have a redirect with sourceUri "en/buy.html" and targetUri "en/company/buy.html"
-    And I should have a redirect with sourceUri "de/kaufen.html" and targetUri "de/company/kaufen.html"
+  Scenario: A removed node should lead to a GONE response with empty target uri
+    Given the event NodeAggregateWasRemoved was published with payload:
+      | Key                                  | Value           |
+      | contentStreamId                      | "cs-identifier" |
+      | nodeAggregateId                      | "company"       |
+      | affectedOccupiedDimensionSpacePoints | []              |
+      | affectedCoveredDimensionSpacePoints  | [[]]            |
+    And the graph projection is fully up to date
+    And The documenturipath projection is up to date
 
-  #fixed in 1.0.4
-  @fixtures
-  Scenario: Create redirects for nodes that use the current dimension as fallback
-    When I get a node by path "/sites/behat/company" with the following context:
-      | Workspace        | Language |
-      | user-testaccount | en       |
-    And I move the node into the node with path "/sites/behat/service"
-    And I publish the node
-    Then I should have a redirect with sourceUri "en/company.html" and targetUri "en/service/company.html"
-    And I should have a redirect with sourceUri "de/company.html" and targetUri "de/service/company.html"
+    Then I should have a redirect with sourceUri "company" and statusCode "410"
+    And I should have a redirect with sourceUri "company" and targetUri ""
+    And I should have a redirect with sourceUri "company/service" and statusCode "410"
+    And I should have a redirect with sourceUri "company/service" and targetUri ""
