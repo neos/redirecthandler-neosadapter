@@ -19,6 +19,9 @@ use Neos\Flow\Package\Package as BasePackage;
 use Neos\Neos\Domain\Model\SiteNodeName;
 use Neos\Neos\FrontendRouting\Projection\DocumentUriPathProjection;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
+use Neos\ContentRepository\Core\Factory\ContentRepositoryId;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 
 /**
  * The Neos RedirectHandler NeosAdapter Package
@@ -34,24 +37,39 @@ class Package extends BasePackage
         $dispatcher = $bootstrap->getSignalSlotDispatcher();
 
         $dispatcher->connect(DocumentUriPathProjection::class, 'afterNodeAggregateWasMoved', function (
-            string $oldUriPath, string $newUriPath, SiteNodeName $siteNodeName, $_,
+            ContentRepositoryId $contentRepositoryId, string $oldUriPath, string $newUriPath, NodeTypeName $nodeTypeName, SiteNodeName $siteNodeName, $_,
         ) use ($bootstrap) {
             $nodeRedirectService = $bootstrap->getObjectManager()->get(NodeRedirectService::class);
-            $nodeRedirectService->createRedirect($oldUriPath, $newUriPath, $siteNodeName);
+
+            $contentRepository = $bootstrap->getObjectManager()->get(ContentRepositoryRegistry::class)->get($contentRepositoryId);
+            $nodeTypeManager = $contentRepository->getNodeTypeManager();
+            $nodeType = $nodeTypeManager->getNodeType($nodeTypeName);
+
+            $nodeRedirectService->createRedirect($oldUriPath, $newUriPath, $nodeType, $siteNodeName);
         });
 
         $dispatcher->connect(DocumentUriPathProjection::class, 'afterNodeAggregateWasRemoved', function (
-            string $oldUriPath, SiteNodeName $siteNodeName, $_,
+            ContentRepositoryId $contentRepositoryId, string $oldUriPath, NodeTypeName $nodeTypeName, SiteNodeName $siteNodeName, $_,
         ) use ($bootstrap) {
             $nodeRedirectService = $bootstrap->getObjectManager()->get(NodeRedirectService::class);
-            $nodeRedirectService->createRedirect($oldUriPath, null, $siteNodeName);
+
+            $contentRepository = $bootstrap->getObjectManager()->get(ContentRepositoryRegistry::class)->get($contentRepositoryId);
+            $nodeTypeManager = $contentRepository->getNodeTypeManager();
+            $nodeType = $nodeTypeManager->getNodeType($nodeTypeName);
+
+            $nodeRedirectService->createRedirect($oldUriPath, null, $nodeType, $siteNodeName);
         });
 
         $dispatcher->connect(DocumentUriPathProjection::class, 'afterDocumentUriPathChanged', function (
-            string $oldUriPath, string $newUriPath, SiteNodeName $siteNodeName, $_, EventEnvelope $eventEnvelope,
+            ContentRepositoryId $contentRepositoryId, string $oldUriPath, string $newUriPath, NodeTypeName $nodeTypeName, SiteNodeName $siteNodeName, $_, EventEnvelope $eventEnvelope,
         ) use ($bootstrap) {
             $nodeRedirectService = $bootstrap->getObjectManager()->get(NodeRedirectService::class);
-            $nodeRedirectService->createRedirect($oldUriPath, $newUriPath, $siteNodeName);
+
+            $contentRepository = $bootstrap->getObjectManager()->get(ContentRepositoryRegistry::class)->get($contentRepositoryId);
+            $nodeTypeManager = $contentRepository->getNodeTypeManager();
+            $nodeType = $nodeTypeManager->getNodeType($nodeTypeName);
+
+            $nodeRedirectService->createRedirect($oldUriPath, $newUriPath, $nodeType, $siteNodeName);
         });
 
     }

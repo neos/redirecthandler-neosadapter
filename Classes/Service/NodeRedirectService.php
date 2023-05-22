@@ -15,7 +15,6 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
 
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
-use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
 use Neos\Neos\Domain\Model\Domain;
@@ -23,6 +22,7 @@ use Neos\Neos\Domain\Model\SiteNodeName;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
 use Psr\Log\LoggerInterface;
+use Neos\ContentRepository\Core\NodeType\NodeType;
 
 /**
  * Service that creates redirects for moved / deleted nodes.
@@ -90,9 +90,6 @@ class NodeRedirectService
      */
     protected $siteRepository;
 
-    #[\Neos\Flow\Annotations\Inject]
-    protected ContentRepositoryRegistry $contentRepositoryRegistry;
-
 
     /**
      * @param string $oldUriPath
@@ -103,6 +100,7 @@ class NodeRedirectService
     public function createRedirect(
         string $oldUriPath,
         ?string $newUriPath,
+        NodeType $nodeType,
         SiteNodeName $siteNodeName,
     ): void {
 
@@ -110,8 +108,7 @@ class NodeRedirectService
             return;
         }
 
-        // TODO: Restrict by NodeType
-        if (/*$this->isRestrictedByNodeType($targetNodeInfo->node)|| */ $this->isRestrictedByOldUri($oldUriPath)) {
+        if ($this->isRestrictedByNodeType($nodeType) || $this->isRestrictedByOldUri($oldUriPath)) {
             return;
         }
         $oldUriPath = $this->buildUri($oldUriPath);
@@ -176,7 +173,7 @@ class NodeRedirectService
      * @param Node $node
      * @return bool
      */
-    protected function isRestrictedByNodeType(Node $node): bool
+    protected function isRestrictedByNodeType(NodeType $nodeType): bool
     {
         if (!isset($this->restrictByNodeType)) {
             return false;
@@ -186,10 +183,10 @@ class NodeRedirectService
             if ($status !== true) {
                 continue;
             }
-            if ($node->nodeType->isOfType($disabledNodeType)) {
-                $this->logger->debug(vsprintf('Redirect skipped based on the current node type (%s) for node %s because is of type %s', [
-                    $node->nodeType->name->value,
-                    $node->nodeAggregateId->value,
+
+            if ($nodeType->isOfType($disabledNodeType)) {
+                $this->logger->debug(vsprintf('Redirect skipped based on the current node type (%s) for a node because is of type %s', [
+                    $nodeType->name->value,
                     $disabledNodeType
                 ]));
 
