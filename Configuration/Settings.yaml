@@ -15,3 +15,13 @@ Neos:
       # in some cases you might need to completely disable the automatic redirects
       # e.g. on cli, during imports or similar
       enableAutomaticRedirects: true
+
+
+  ContentRepositoryRegistry:
+    presets:
+      'default':
+        projections:
+          'Neos.Neos:DocumentUriPathProjection':
+            catchUpHooks:
+              'Neos.RedirectHandler.NeosAdapter:DocumentUriPathProjectionHook':
+                factoryObjectName: Neos\RedirectHandler\NeosAdapter\CatchUpHook\DocumentUriPathProjectionHookFactory

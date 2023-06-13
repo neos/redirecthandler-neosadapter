@@ -21,6 +21,7 @@ use Neos\Flow\Tests\Behavior\Features\Bootstrap\SecurityOperationsTrait;
 use Neos\Flow\Utility\Environment;
 use Neos\Neos\Tests\Functional\Command\BehatTestHelper;
 use Neos\RedirectHandler\NeosAdapter\Tests\Behavior\Features\Bootstrap\RedirectOperationTrait;
+use Neos\ContentRepositoryRegistry\Factory\ProjectionCatchUpTrigger\CatchUpTriggerWithSynchronousOption;
 
 require_once(__DIR__ . '/../../../../../../Neos/Neos.ContentRepository.Core/Tests/Behavior/Features/Bootstrap/CurrentSubgraphTrait.php');
 require_once(__DIR__ . '/../../../../../../Neos/Neos.ContentRepository.Core/Tests/Behavior/Features/Bootstrap/CurrentUserTrait.php');
@@ -86,6 +87,10 @@ class FeatureContext extends MinkContext
 
         $this->nodeAuthorizationService = $this->objectManager->get(AuthorizationService::class);
         $this->setupSecurity();
+        if (getenv('CATCHUPTRIGGER_ENABLE_SYNCHRONOUS_OPTION')) {
+            CatchUpTriggerWithSynchronousOption::enableSynchonityForSpeedingUpTesting();
+        }
+
         $this->setupEventSourcedTrait(true);
     }
 
