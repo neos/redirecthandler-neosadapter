@@ -8,13 +8,11 @@ Feature: Basic redirect handling with document nodes without dimensions
       | Key                | Value           |
       | workspaceName      | "live"          |
       | newContentStreamId | "cs-identifier" |
-    And the event RootNodeAggregateWithNodeWasCreated was published with payload:
+    And the command CreateRootNodeAggregateWithNode is executed with payload:
       | Key                         | Value             |
       | contentStreamId             | "cs-identifier"   |
       | nodeAggregateId             | "site-root"       |
       | nodeTypeName                | "Neos.Neos:Sites" |
-      | coveredDimensionSpacePoints | [{}]              |
-      | nodeAggregateClassification | "root"            |
     And the graph projection is fully up to date
 
     # site-root
@@ -151,7 +149,7 @@ Feature: Basic redirect handling with document nodes without dimensions
       | Key                          | Value           |
       | contentStreamId              | "cs-identifier" |
       | nodeAggregateId              | "mail"          |
-      | originDimensionSpacePoint    | {}              |
+      | coveredDimensionSpacePoint    | {}              |
       | nodeVariantSelectionStrategy | "allVariants"   |
     And the graph projection is fully up to date
     When the command SetNodeProperties is executed with payload:

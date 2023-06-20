@@ -87,9 +87,8 @@ class FeatureContext extends MinkContext
 
         $this->nodeAuthorizationService = $this->objectManager->get(AuthorizationService::class);
         $this->setupSecurity();
-        if (getenv('CATCHUPTRIGGER_ENABLE_SYNCHRONOUS_OPTION')) {
-            CatchUpTriggerWithSynchronousOption::enableSynchonityForSpeedingUpTesting();
-        }
+
+        CatchUpTriggerWithSynchronousOption::enableSynchonityForSpeedingUpTesting();
 
         $this->setupEventSourcedTrait(true);
     }
