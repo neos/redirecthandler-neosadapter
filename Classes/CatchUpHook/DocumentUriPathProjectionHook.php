@@ -25,6 +25,7 @@ use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 final class DocumentUriPathProjectionHook implements CatchUpHookInterface
 {
     /**
+     * Runtime cache to keep DocumentNodeInfos until they get removed.
      * @var array<string, array<DocumentNodeInfo>>
      */
     private array $documentNodeInfosBeforeRemoval;
@@ -97,17 +98,17 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
             );
             $this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash][] = $node;
 
-            $children = $this->getState()->getAllChildrenOfNode($node);
+            $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
             array_map(
-                function ($childNode) use ($event, $dimensionSpacePoint) {
+                function ($descendantOfNode) use ($event, $dimensionSpacePoint) {
                     $this->nodeRedirectService->appendAffectedNode(
-                        $childNode,
-                        $this->getNodeAddress($event->contentStreamId, $dimensionSpacePoint, $childNode->getNodeAggregateId()),
+                        $descendantOfNode,
+                        $this->getNodeAddress($event->contentStreamId, $dimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
                         $this->getContentRepositoryId()
                     );
-                    $this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash][] = $childNode;
+                    $this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash][] = $descendantOfNode;
                 },
-                $children);
+                iterator_to_array($descendantsOfNode));
         }
     }
 
@@ -135,9 +136,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
     {
         $this->handleNodePropertiesWereSet(
             $event,
-            fn(
-                DocumentNodeInfo $node, NodeAddress $nodeAddress,
-            ) => $this->nodeRedirectService->appendAffectedNode($node, $nodeAddress, $this->getContentRepositoryId())
+            $this->nodeRedirectService->appendAffectedNode(...)
         );
     }
 
@@ -145,9 +144,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
     {
         $this->handleNodePropertiesWereSet(
             $event,
-            fn(
-                DocumentNodeInfo $node, NodeAddress $nodeAddress,
-            ) => $this->nodeRedirectService->createRedirectForAffectedNode($node, $nodeAddress, $this->getContentRepositoryId())
+            $this->nodeRedirectService->createRedirectForAffectedNode(...)
         );
     }
 
@@ -167,16 +164,19 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
                 $event->nodeAggregateId,
                 $affectedDimensionSpacePoint->hash
             ));
-            file_put_contents('/var/www/html/Data/Logs/foo.log', $node->getUriPath() . "\n", flags: FILE_APPEND);
             if ($node === null) {
                 // probably not a document node
                 continue;
             }
 
-            $closure($node, $this->getNodeAddress($event->contentStreamId, $affectedDimensionSpacePoint, $node->getNodeAggregateId()));
+            $closure($node, $this->getNodeAddress($event->contentStreamId, $affectedDimensionSpacePoint, $node->getNodeAggregateId()), $this->getContentRepositoryId());
 
-            $children = $this->getState()->getAllChildrenOfNode($node);
-            array_map(fn($childNode) => $closure($childNode, $this->getNodeAddress($event->contentStreamId, $affectedDimensionSpacePoint, $childNode->getNodeAggregateId())), $children);
+            $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
+            array_map(fn($descendantOfNode) => $closure(
+                $descendantOfNode,
+                $this->getNodeAddress($event->contentStreamId, $affectedDimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
+                $this->getContentRepositoryId()
+            ), iterator_to_array($descendantsOfNode));
         }
     }
 
@@ -184,9 +184,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
     {
         $this->handleNodeWasMoved(
             $event,
-            fn(
-                DocumentNodeInfo $node, NodeAddress $nodeAddress,
-            ) => $this->nodeRedirectService->appendAffectedNode($node, $nodeAddress, $this->getContentRepositoryId())
+            $this->nodeRedirectService->appendAffectedNode(...)
         );
     }
 
@@ -194,9 +192,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
     {
         $this->handleNodeWasMoved(
             $event,
-            fn(
-                DocumentNodeInfo $node, NodeAddress $nodeAddress,
-            ) => $this->nodeRedirectService->createRedirectForAffectedNode($node, $nodeAddress, $this->getContentRepositoryId())
+            $this->nodeRedirectService->createRedirectForAffectedNode(...)
         );
     }
 
@@ -220,10 +216,14 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
                     continue;
                 }
 
-                $closure($node, $this->getNodeAddress($event->contentStreamId, $newLocation->coveredDimensionSpacePoint, $node->getNodeAggregateId()));
+                $closure($node, $this->getNodeAddress($event->contentStreamId, $newLocation->coveredDimensionSpacePoint, $node->getNodeAggregateId()), $this->getContentRepositoryId());
 
-                $children = $this->getState()->getAllChildrenOfNode($node);
-                array_map(fn($childNode) => $closure($childNode, $this->getNodeAddress($event->contentStreamId, $newLocation->coveredDimensionSpacePoint, $childNode->getNodeAggregateId())), $children);
+                $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
+                array_map(fn($descendantOfNode) => $closure(
+                    $descendantOfNode,
+                    $this->getNodeAddress($event->contentStreamId, $newLocation->coveredDimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
+                    $this->getContentRepositoryId()
+                ), iterator_to_array($descendantsOfNode));
             }
         }
     }

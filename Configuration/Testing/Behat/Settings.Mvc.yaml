@@ -1,0 +1,8 @@
+Neos:
+  Flow:
+    mvc:
+      routes:
+        'Neos.Neos':
+          variables:
+            # set explicitly for testing as it may be overriden by other packages (e.g. Neos.Demo)
+            'defaultUriSuffix': '.html'

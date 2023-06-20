@@ -8,7 +8,7 @@ use Neos\ContentRepository\Core\Projection\CatchUpHookInterface;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 
-class DocumentUriPathProjectionHookFactory implements CatchUpHookFactoryInterface
+final class DocumentUriPathProjectionHookFactory implements CatchUpHookFactoryInterface
 {
     public function __construct(
         protected readonly NodeRedirectService $redirectService,

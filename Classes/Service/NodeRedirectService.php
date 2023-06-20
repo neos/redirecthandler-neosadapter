@@ -40,7 +40,7 @@ use Neos\Flow\Mvc\Exception\NoMatchingRouteException;
  *
  * @Flow\Scope("singleton")
  */
-class NodeRedirectService
+final class NodeRedirectService
 {
     const STATUS_CODE_TYPE_REDIRECT = 'redirect';
     const STATUS_CODE_TYPE_GONE = 'gone';
@@ -49,14 +49,11 @@ class NodeRedirectService
     private array $hostnamesRuntimeCache = [];
 
     #[Flow\Inject]
-    protected RedirectStorageInterface $redirectStorage;
+    protected ?LoggerInterface $logger = null;
 
-    #[Flow\Inject]
-    protected PersistenceManagerInterface $persistenceManager;
-
-    #[Flow\Inject]
-    protected LoggerInterface $logger;
-
+    /**
+     * @var array<string, int>
+     */
     #[Flow\InjectConfiguration(path: "statusCode", package: "Neos.RedirectHandler")]
     protected array $defaultStatusCode;
 
@@ -66,22 +63,40 @@ class NodeRedirectService
     #[Flow\InjectConfiguration(path: "enableRemovedNodeRedirect", package: "Neos.RedirectHandler.NeosAdapter")]
     protected bool $enableRemovedNodeRedirect;
 
+    /**
+     * @var array<string, bool>
+     */
     #[Flow\InjectConfiguration(path: "restrictByOldUriPrefix", package: "Neos.RedirectHandler.NeosAdapter")]
-    protected $restrictByOldUriPrefix;
+    protected array $restrictByOldUriPrefix = [];
 
+    /**
+     * @var array<string, bool>
+     */
     #[Flow\InjectConfiguration(path: "restrictByNodeType", package: "Neos.RedirectHandler.NeosAdapter")]
-    protected $restrictByNodeType;
+    protected array $restrictByNodeType = [];
 
-    #[Flow\Inject]
-    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+    public function __construct(
+        #[Flow\Inject]
+        protected RedirectStorageInterface $redirectStorage,
+        #[Flow\Inject]
+        protected PersistenceManagerInterface $persistenceManager,
+        #[Flow\Inject]
+        protected ContentRepositoryRegistry $contentRepositoryRegistry,
+        #[Flow\Inject]
+        protected SiteRepository $siteRepository,
+    ) {
+    }
 
-    #[Flow\Inject]
-    protected SiteRepository $siteRepository;
-
+    /**
+     * Collects affected nodes before they got moved or removed.
+     *
+     * @throws \Neos\Flow\Http\Exception
+     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     */
     public function appendAffectedNode(DocumentNodeInfo $nodeInfo, NodeAddress $nodeAddress, ContentRepositoryId $contentRepositoryId): void
     {
         try {
-            $this->affectedNodes[$this->getAffectedNodesKey($nodeInfo, $contentRepositoryId)] = [
+            $this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $contentRepositoryId)] = [
                 'node' => $nodeInfo,
                 'url' => $this->getNodeUriBuilder($nodeInfo->getSiteNodeName(), $contentRepositoryId)->uriFor($nodeAddress),
             ];
@@ -89,17 +104,23 @@ class NodeRedirectService
         }
     }
 
+    /**
+     * Creates redirects for given node and uses the collected affected nodes to determine the source of the new redirect target.
+     *
+     * @throws \Neos\Flow\Http\Exception
+     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
+     */
     public function createRedirectForAffectedNode(DocumentNodeInfo $nodeInfo, NodeAddress $nodeAddress, ContentRepositoryId $contentRepositoryId): void
     {
         if (!$this->enableAutomaticRedirects) {
             return;
         }
 
-        $affectedNode = $this->affectedNodes[$this->getAffectedNodesKey($nodeInfo, $contentRepositoryId)] ?? null;
+        $affectedNode = $this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $contentRepositoryId)] ?? null;
         if ($affectedNode === null) {
             return;
         }
-        unset($this->affectedNodes[$this->getAffectedNodesKey($nodeInfo, $contentRepositoryId)]);
+        unset($this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $contentRepositoryId)]);
 
         /** @var Uri $oldUri */
         $oldUri = $affectedNode['url'];
@@ -111,26 +132,28 @@ class NodeRedirectService
         try {
             $newUri = $this->getNodeUriBuilder($nodeInfo->getSiteNodeName(), $contentRepositoryId)->uriFor($nodeAddress);
         } catch (NoMatchingRouteException $exception) {
+            // We can't build an uri for given node, so we can't create any redirect. E.g.: Node is disabled.
             return;
         }
-        file_put_contents('/var/www/html/Data/Logs/foo.log', $oldUri->getPath() ." => " . $newUri->getPath() . "\n", flags: FILE_APPEND);
-        file_put_contents('/var/www/html/Data/Logs/foo.log', $affectedNode['node']->getDimensionSpacePointHash() ." => " . $nodeInfo->getDimensionSpacePointHash() . "\n", flags: FILE_APPEND);
         $this->createRedirectWithNewTarget($oldUri->getPath(), $newUri->getPath(), $nodeInfo->getSiteNodeName());
 
         $this->persistenceManager->persistAll();
     }
 
+    /**
+     * Creates redirects for given removed node and uses the collected affected nodes to determine the source of the new redirect.
+     */
     public function createRedirectForRemovedAffectedNode(DocumentNodeInfo $nodeInfo, ContentRepositoryId $contentRepositoryId): void
     {
         if (!$this->enableAutomaticRedirects) {
             return;
         }
 
-        $affectedNode = $this->affectedNodes[$this->getAffectedNodesKey($nodeInfo, $contentRepositoryId)] ?? null;
+        $affectedNode = $this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $contentRepositoryId)] ?? null;
         if ($affectedNode === null) {
             return;
         }
-        unset($this->affectedNodes[$this->getAffectedNodesKey($nodeInfo, $contentRepositoryId)]);
+        unset($this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $contentRepositoryId)]);
 
         /** @var Uri $oldUri */
         $oldUri = $affectedNode['url'];
@@ -150,7 +173,7 @@ class NodeRedirectService
         return $this->contentRepositoryRegistry->get($contentRepositoryId)->getNodeTypeManager()->getNodeType($nodeTypeName);
     }
 
-    private function getAffectedNodesKey(DocumentNodeInfo $nodeInfo, ContentRepositoryId $contentRepositoryId): string
+    private function createAffectedNodesKey(DocumentNodeInfo $nodeInfo, ContentRepositoryId $contentRepositoryId): string
     {
         return $contentRepositoryId->value . '#' . $nodeInfo->getNodeAggregateId()->value . '#' . $nodeInfo->getDimensionSpacePointHash();
     }
@@ -181,7 +204,7 @@ class NodeRedirectService
         }
 
         $hosts = $this->getHostnames($siteNodeName);
-        $statusCode = (integer)$this->defaultStatusCode[self::STATUS_CODE_TYPE_REDIRECT];
+        $statusCode = $this->defaultStatusCode[self::STATUS_CODE_TYPE_REDIRECT];
 
         $this->redirectStorage->addRedirect($oldUriPath, $newUriPath, $statusCode, $hosts);
 
@@ -189,7 +212,7 @@ class NodeRedirectService
     }
 
     /**
-     * Removes a redirect
+     * Adds a redirect for a removed target if enabled.
      */
     protected function createRedirectForRemovedTarget(string $oldUriPath, SiteNodeName $siteNodeName): bool
     {
@@ -198,7 +221,7 @@ class NodeRedirectService
         // For example redirect to dedicated landing pages for deleted campaign NodeTypes
         if ($this->enableRemovedNodeRedirect) {
             $hosts = $this->getHostnames($siteNodeName);
-            $statusCode = (integer)$this->defaultStatusCode[self::STATUS_CODE_TYPE_GONE];
+            $statusCode = $this->defaultStatusCode[self::STATUS_CODE_TYPE_GONE];
             $this->redirectStorage->addRedirect($oldUriPath, '', $statusCode, $hosts);
 
             return true;
@@ -208,7 +231,7 @@ class NodeRedirectService
     }
 
     /**
-     * Check if the current node type is restricted by Settings
+     * Check if the current node type is restricted by NodeType
      */
     protected function isRestrictedByNodeType(NodeType $nodeType): bool
     {
@@ -222,7 +245,7 @@ class NodeRedirectService
             }
 
             if ($nodeType->isOfType($disabledNodeType)) {
-                $this->logger->debug(vsprintf('Redirect skipped based on the current node type (%s) for a node because is of type %s', [
+                $this->logger?->debug(vsprintf('Redirect skipped based on the current node type (%s) for a node because is of type %s', [
                     $nodeType->name->value,
                     $disabledNodeType
                 ]));
@@ -235,7 +258,7 @@ class NodeRedirectService
     }
 
     /**
-     * Check if the old URI is restricted by Settings
+     * Check if the old URI is restricted by old uri
      */
     protected function isRestrictedByOldUri(string $oldUriPath): bool
     {
@@ -250,7 +273,7 @@ class NodeRedirectService
             $uriPrefix = rtrim($uriPrefix, '/') . '/';
             $oldUriPath = rtrim($oldUriPath, '/') . '/';
             if (mb_strpos($oldUriPath, $uriPrefix) === 0) {
-                $this->logger->debug(vsprintf('Redirect skipped based on the old URI (%s) because prefix matches %s', [
+                $this->logger?->debug(vsprintf('Redirect skipped based on the old URI (%s) because prefix matches %s', [
                     $oldUriPath,
                     $uriPrefix
                 ]));
@@ -264,6 +287,7 @@ class NodeRedirectService
 
     /**
      * Collects all hostnames from the Domain entries attached to the current site.
+     * @return array<string, array<string>>
      */
     protected function getHostnames(SiteNodeName $siteNodeName): array
     {
