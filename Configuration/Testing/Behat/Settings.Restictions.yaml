@@ -7,4 +7,3 @@ Neos:
         'Neos.Neos:Test.Redirect.RestrictedPage': true
       restrictByOldUriPrefix:
         'restricted-by-path': true
-
