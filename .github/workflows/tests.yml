@@ -10,7 +10,7 @@ jobs:
   build:
     env:
       FLOW_CONTEXT: Testing/Behat
-      NEOS_TARGET_VERSION: 9.0
+      NEOS_TARGET_VERSION: '9.0'
       NEOS_BASE_FOLDER: neos-base-distribution
       PACKAGE_FOLDER: redirect-neosadapter
 
