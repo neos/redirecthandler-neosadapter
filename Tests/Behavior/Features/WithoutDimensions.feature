@@ -143,23 +143,23 @@ Feature: Basic redirect handling with document nodes without dimensions
     And The documenturipath projection is up to date
     Then I should have no redirect with sourceUri "restricted.html"
 
-#  @fixtures
-#  Scenario: Redirects should be created for a hidden node
-#    When the command DisableNodeAggregate is executed with payload:
-#      | Key                          | Value           |
-#      | contentStreamId              | "cs-identifier" |
-#      | nodeAggregateId              | "mail"          |
-#      | coveredDimensionSpacePoint   | {}              |
-#      | nodeVariantSelectionStrategy | "allVariants"   |
-#    And the graph projection is fully up to date
-#    When the command SetNodeProperties is executed with payload:
-#      | Key                       | Value                          |
-#      | contentStreamId           | "cs-identifier"                |
-#      | nodeAggregateId           | "mail"                         |
-#      | originDimensionSpacePoint | {}                             |
-#      | propertyValues            | {"uriPathSegment": "not-mail"} |
-#    And The documenturipath projection is up to date
-#    Then I should have a redirect with sourceUri "mail.html" and targetUri "not-mail.html"
+  @fixtures
+  Scenario: Redirects should be created for a hidden node
+    When the command DisableNodeAggregate is executed with payload:
+      | Key                          | Value           |
+      | contentStreamId              | "cs-identifier" |
+      | nodeAggregateId              | "mail"          |
+      | coveredDimensionSpacePoint   | {}              |
+      | nodeVariantSelectionStrategy | "allVariants"   |
+    And the graph projection is fully up to date
+    When the command SetNodeProperties is executed with payload:
+      | Key                       | Value                          |
+      | contentStreamId           | "cs-identifier"                |
+      | nodeAggregateId           | "mail"                         |
+      | originDimensionSpacePoint | {}                             |
+      | propertyValues            | {"uriPathSegment": "not-mail"} |
+    And The documenturipath projection is up to date
+    Then I should have a redirect with sourceUri "mail.html" and targetUri "not-mail.html"
 
   @fixtures
   Scenario: A removed node should lead to a GONE response with empty target uri

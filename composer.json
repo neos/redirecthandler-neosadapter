@@ -4,6 +4,7 @@
     "description": "Neos Redirect Handler",
     "license": "GPL-3.0-or-later",
     "require": {
+        "php": ">=8.2",
         "neos/redirecthandler": "~6.0 || dev-master",
         "neos/neos": "^9.0",
         "neos/flow": "^9.0"
