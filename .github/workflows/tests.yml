@@ -121,3 +121,9 @@ jobs:
       run: |
         cd ${NEOS_BASE_FOLDER}
         bin/behat -c Packages/Application/Neos.RedirectHandler.NeosAdapter/Tests/Behavior/behat.yml.dist
+        
+    - name: Show log on failure
+      if: ${{ failure()  }}
+      run: |
+        cd ${NEOS_BASE_FOLDER}
+        cat Data/Logs/System_Testing.log
