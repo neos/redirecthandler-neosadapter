@@ -79,10 +79,12 @@ jobs:
     - name: Prepare external packages for development distribution
       run: |
         cd ${NEOS_BASE_FOLDER}
-        composer config repositories.package '{ "type": "path", "url": "../${{ env.PACKAGE_FOLDER }}", "options": { "symlink": false } }'
         composer require --no-update --no-interaction neos/redirecthandler:"dev-flow-9-compatibility as dev-master"
         composer require --no-update --no-interaction neos/redirecthandler-databasestorage:"dev-flow-9-compatibility as dev-main"
-        composer require --no-update --no-interaction neos/redirecthandler-neosadapter:"dev-${PACKAGE_TARGET_VERSION}"
+        
+        git -C ../${{ env.PACKAGE_FOLDER }} checkout -b build
+        composer config repositories.package '{ "type": "path", "url": "../${{ env.PACKAGE_FOLDER }}", "options": { "symlink": false } }'
+        composer require --no-update --no-interaction neos/redirecthandler-neosadapter:"dev-build as dev-${PACKAGE_TARGET_VERSION}"
 
     - name: Composer Install
       run: |
