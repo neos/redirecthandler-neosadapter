@@ -119,6 +119,9 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
         }
 
         foreach ($event->affectedCoveredDimensionSpacePoints as $dimensionSpacePoint) {
+            if (!array_key_exists($dimensionSpacePoint->hash, $this->documentNodeInfosBeforeRemoval)) {
+                continue;
+            }
             $documentNodeInfosBeforeRemoval = $this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash];
             unset($this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash]);
 
