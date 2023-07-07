@@ -82,10 +82,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
         $this->documentNodeInfosBeforeRemoval = [];
 
         foreach ($event->affectedCoveredDimensionSpacePoints as $dimensionSpacePoint) {
-            $node = $this->tryGetNode(fn() => $this->getState()->getByIdAndDimensionSpacePointHash(
-                $event->nodeAggregateId,
-                $dimensionSpacePoint->hash
-            ));
+            $node = $this->findNodeByIdAndDimensionSpacePointHash($event->nodeAggregateId, $dimensionSpacePoint->hash);
             if ($node === null) {
                 // Probably not a document node
                 continue;
@@ -160,10 +157,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
         }
 
         foreach ($event->affectedDimensionSpacePoints as $affectedDimensionSpacePoint) {
-            $node = $this->tryGetNode(fn() => $this->getState()->getByIdAndDimensionSpacePointHash(
-                $event->nodeAggregateId,
-                $affectedDimensionSpacePoint->hash
-            ));
+            $node = $this->findNodeByIdAndDimensionSpacePointHash($event->nodeAggregateId, $affectedDimensionSpacePoint->hash);
             if ($node === null) {
                 // probably not a document node
                 continue;
@@ -206,12 +200,8 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
             /* @var \Neos\ContentRepository\Core\Feature\NodeMove\Dto\OriginNodeMoveMapping $moveMapping */
             foreach ($moveMapping->newLocations as $newLocation) {
                 /* @var $newLocation CoverageNodeMoveMapping */
-                $node = $this->tryGetNode(fn() => $this->getState()->getByIdAndDimensionSpacePointHash(
-                    $event->nodeAggregateId,
-                    $newLocation->coveredDimensionSpacePoint->hash
-                ));
-
-                if (!$node) {
+                $node = $this->findNodeByIdAndDimensionSpacePointHash($event->nodeAggregateId, $newLocation->coveredDimensionSpacePoint->hash);
+                if ($node === null) {
                     // node probably no document node, skip
                     continue;
                 }
@@ -238,12 +228,11 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
         return $contentStreamId->equals($this->getState()->getLiveContentStreamId());
     }
 
-    private function tryGetNode(\Closure $closure): ?DocumentNodeInfo
+    private function findNodeByIdAndDimensionSpacePointHash(NodeAggregateId $nodeAggregateId, string $dimensionSpacePointHash): ?DocumentNodeInfo
     {
         try {
-            return $closure();
+            return $this->getState()->getByIdAndDimensionSpacePointHash($nodeAggregateId, $dimensionSpacePointHash);
         } catch (NodeNotFoundException $_) {
-            /** @noinspection BadExceptionsProcessingInspection */
             return null;
         }
     }
