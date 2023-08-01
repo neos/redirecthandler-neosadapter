@@ -169,7 +169,10 @@ class NodeRedirectService
         if ($targetWorkspace->isPublicWorkspace() === false || $nodeType->isOfType('Neos.Neos:Document') === false) {
             return;
         }
-        $this->appendNodeAndChildrenDocumentsToPendingRedirects($node, $targetWorkspace);
+
+        if ($this->hasNodeUriChanged($node, $targetWorkspace)) {
+            $this->appendNodeAndChildrenDocumentsToPendingRedirects($node, $targetWorkspace);
+        }
     }
 
     /**
@@ -252,10 +255,6 @@ class NodeRedirectService
     {
         $identifierAndWorkspaceKey = $node->getIdentifier() . '@' . $targetWorkspace->getName();
         if (isset($this->pendingRedirects[$identifierAndWorkspaceKey])) {
-            return;
-        }
-
-        if (!$this->hasNodeUriChanged($node, $targetWorkspace)) {
             return;
         }
 
