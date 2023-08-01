@@ -307,25 +307,20 @@ class NodeRedirectService
     protected function hasNodeUriChanged(NodeInterface $node, Workspace $targetWorkspace): bool
     {
         $nodeInTargetWorkspace = $this->getNodeInWorkspace($node, $targetWorkspace);
+
         if (!$nodeInTargetWorkspace) {
             return false;
         }
-        try {
-            $newUriPath = $this->buildUriPathForNode($node);
-        } catch (\Exception $exception) {
-            $this->logger->info(sprintf('Failed to build new URI for updated node "%s": %s', $node->getContextPath(), $exception->getMessage()));
-            return false;
-        }
-        $newUriPath = $this->removeContextInformationFromRelativeNodeUri($newUriPath);
-        try {
-            $oldUriPath = $this->buildUriPathForNode($nodeInTargetWorkspace);
-        } catch (\Exception $exception) {
-            $this->logger->info(sprintf('Failed to build previous URI for updated node "%s": %s', $node->getContextPath(), $exception->getMessage()));
-            return false;
-        }
-        $oldUriPath = $this->removeContextInformationFromRelativeNodeUri($oldUriPath);
 
-        return ($newUriPath !== $oldUriPath);
+        if ($node->getProperty('uriPathSegment') !== $nodeInTargetWorkspace->getProperty('uriPathSegment')) {
+            return true;
+        }
+
+        if ($node->getParentPath() !== $nodeInTargetWorkspace->getParentPath()) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -568,7 +563,7 @@ class NodeRedirectService
     protected function buildUriPathForNode(NodeInterface $node): string
     {
         return $this->getUriBuilder()
-                ->uriFor('show', ['node' => $node], 'Frontend\\Node', 'Neos.Neos');
+            ->uriFor('show', ['node' => $node], 'Frontend\\Node', 'Neos.Neos');
     }
 
     /**
