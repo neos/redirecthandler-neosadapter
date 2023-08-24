@@ -11,7 +11,6 @@ use Neos\ContentRepository\Core\Tests\Behavior\Features\Bootstrap\Helpers\FakeCl
 use Neos\ContentRepository\Core\Tests\Behavior\Features\Bootstrap\Helpers\FakeUserIdProviderFactory;
 use Neos\ContentRepository\Core\Tests\Behavior\Features\Bootstrap\NodeOperationsTrait;
 use Neos\ContentRepository\Core\Tests\Behavior\Features\Helper\ContentGraphs;
-use Neos\ContentRepository\Security\Service\AuthorizationService;
 use Neos\ContentRepository\Core\Tests\Behavior\Features\Bootstrap\EventSourcedTrait;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Configuration\ConfigurationManager;
@@ -85,10 +84,11 @@ class FeatureContext extends MinkContext
         $this->objectManager = self::$bootstrap->getObjectManager();
         $this->environment = $this->objectManager->get(Environment::class);
 
-        $this->nodeAuthorizationService = $this->objectManager->get(AuthorizationService::class);
         $this->setupSecurity();
 
-        CatchUpTriggerWithSynchronousOption::enableSynchonityForSpeedingUpTesting();
+//        if (getenv('CATCHUPTRIGGER_ENABLE_SYNCHRONOUS_OPTION')) {
+//            CatchUpTriggerWithSynchronousOption::enableSynchonityForSpeedingUpTesting();
+//        }
 
         $this->setupEventSourcedTrait(true);
     }
@@ -103,7 +103,7 @@ class FeatureContext extends MinkContext
 
     protected function getContentRepositoryService(ContentRepositoryId $contentRepositoryId, ContentRepositoryServiceFactoryInterface $factory): ContentRepositoryServiceInterface
     {
-        return $this->getContentRepositoryRegistry()->getService($contentRepositoryId, $factory);
+        return $this->getContentRepositoryRegistry()->buildService($contentRepositoryId, $factory);
     }
 
     /**
@@ -144,7 +144,7 @@ class FeatureContext extends MinkContext
             $this->contentRepository->setUp();
             self::$wasContentRepositorySetupCalled = true;
         }
-        $this->contentRepositoryInternals = $this->contentRepositoryRegistry->getService($this->contentRepositoryId, new ContentRepositoryInternalsFactory());
+        $this->contentRepositoryInternals = $this->contentRepositoryRegistry->buildService($this->contentRepositoryId, new ContentRepositoryInternalsFactory());
 
         $availableContentGraphs = [];
         $availableContentGraphs['DoctrineDBAL'] = $this->contentRepository->getContentGraph();
