@@ -16,11 +16,10 @@ use Neos\ContentRepository\Core\Feature\NodeMove\Dto\CoverageNodeMoveMapping;
 use Neos\Neos\FrontendRouting\Projection\DocumentNodeInfo;
 use Neos\Neos\FrontendRouting\Exception\NodeNotFoundException;
 use Neos\Neos\FrontendRouting\NodeAddress;
-use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
-use Neos\ContentRepository\Core\Factory\ContentRepositoryId;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
+use Neos\Neos\FrontendRouting\NodeAddressFactory;
 
 final class DocumentUriPathProjectionHook implements CatchUpHookInterface
 {
@@ -91,7 +90,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
             $this->nodeRedirectService->appendAffectedNode(
                 $node,
                 $this->getNodeAddress($event->contentStreamId, $dimensionSpacePoint, $node->getNodeAggregateId()),
-                $this->getContentRepositoryId()
+                $this->contentRepository->id
             );
             $this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash][] = $node;
 
@@ -101,7 +100,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
                     $this->nodeRedirectService->appendAffectedNode(
                         $descendantOfNode,
                         $this->getNodeAddress($event->contentStreamId, $dimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
-                        $this->getContentRepositoryId()
+                        $this->contentRepository->id
                     );
                     $this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash][] = $descendantOfNode;
                 },
@@ -123,9 +122,9 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
             unset($this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash]);
 
             array_map(
-                fn($node) => $this->nodeRedirectService->createRedirectForRemovedAffectedNode(
+                fn(DocumentNodeInfo $node) => $this->nodeRedirectService->createRedirectForRemovedAffectedNode(
                     $node,
-                    $this->getContentRepositoryId()
+                    $this->contentRepository->id
                 ),
                 $documentNodeInfosBeforeRemoval
             );
@@ -166,13 +165,13 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
                 continue;
             }
 
-            $closure($node, $this->getNodeAddress($event->contentStreamId, $affectedDimensionSpacePoint, $node->getNodeAggregateId()), $this->getContentRepositoryId());
+            $closure($node, $this->getNodeAddress($event->contentStreamId, $affectedDimensionSpacePoint, $node->getNodeAggregateId()), $this->contentRepository->id);
 
             $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
-            array_map(fn($descendantOfNode) => $closure(
+            array_map(fn(DocumentNodeInfo $descendantOfNode) => $closure(
                 $descendantOfNode,
                 $this->getNodeAddress($event->contentStreamId, $affectedDimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
-                $this->getContentRepositoryId()
+                $this->contentRepository->id
             ), iterator_to_array($descendantsOfNode));
         }
     }
@@ -209,13 +208,13 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
                     continue;
                 }
 
-                $closure($node, $this->getNodeAddress($event->contentStreamId, $newLocation->coveredDimensionSpacePoint, $node->getNodeAggregateId()), $this->getContentRepositoryId());
+                $closure($node, $this->getNodeAddress($event->contentStreamId, $newLocation->coveredDimensionSpacePoint, $node->getNodeAggregateId()), $this->contentRepository->id);
 
                 $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
-                array_map(fn($descendantOfNode) => $closure(
+                array_map(fn(DocumentNodeInfo $descendantOfNode) => $closure(
                     $descendantOfNode,
                     $this->getNodeAddress($event->contentStreamId, $newLocation->coveredDimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
-                    $this->getContentRepositoryId()
+                    $this->contentRepository->id
                 ), iterator_to_array($descendantsOfNode));
             }
         }
@@ -245,11 +244,8 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
         DimensionSpacePoint $dimensionSpacePoint,
         NodeAggregateId $nodeAggregateId,
     ): NodeAddress {
-        return new NodeAddress($contentStreamId, $dimensionSpacePoint, $nodeAggregateId, WorkspaceName::forLive());
-    }
-
-    private function getContentRepositoryId(): ContentRepositoryId
-    {
-        return $this->contentRepositoryRegistry->getContentRepositoryIdByContentRepository($this->contentRepository);
+        return NodeAddressFactory::create($this->contentRepository)->createFromContentStreamIdAndDimensionSpacePointAndNodeAggregateId(
+            $contentStreamId, $dimensionSpacePoint, $nodeAggregateId
+        );
     }
 }
