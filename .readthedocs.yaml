@@ -8,3 +8,17 @@ build:
   os: "ubuntu-22.04"
   tools:
     python: "3.11"
+
+# Build documentation in the Documentation/ directory with Sphinx
+sphinx:
+  configuration: Documentation/conf.py
+
+# If using Sphinx, optionally build your docs in additional formats such as PDF
+formats:
+  - pdf
+  - epub
+
+# Optionally declare the Python requirements required to build your docs
+python:
+  install:
+    - requirements: Documentation/requirements.txt
