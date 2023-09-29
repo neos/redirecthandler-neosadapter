@@ -2,10 +2,43 @@
 Feature: Basic redirect handling with document nodes in multiple dimensions
 
   Background:
-    Given I have the following content dimensions:
+    Given using the following content dimensions:
       | Identifier | Values      | Generalizations |
       | language   | de, en, gsw | gsw->de, en     |
       | market     | DE, CH      | CH->DE          |
+    And using the following node types:
+    """yaml
+    'Neos.ContentRepository:Root': []
+
+    'Neos.Neos:Sites':
+      superTypes:
+        'Neos.ContentRepository:Root': true
+    'Neos.Neos:Document':
+      properties:
+        uriPathSegment:
+          type: string
+
+    'Neos.Neos:Test.Redirect.Page':
+      superTypes:
+        'Neos.Neos:Document': true
+      constraints:
+        nodeTypes:
+          '*': true
+          'Neos.Neos:Test.Redirect.Page': true
+      properties:
+        title:
+          type: string
+
+    'Neos.Neos:Test.Redirect.RestrictedPage':
+      superTypes:
+        'Neos.Neos:Document': true
+      constraints:
+        nodeTypes:
+          '*': true
+          'Neos.Neos:Test.Redirect.Page': true
+    """
+    And using identifier "default", I define a content repository
+    And I am in content repository "default"
     And I am user identified by "initiating-user-identifier"
     And the command CreateRootWorkspace is executed with payload:
       | Key                | Value           |
@@ -45,6 +78,7 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
       Neos:
         sites:
           '*':
+            uriPathSuffix: '.html'
             contentRepository: default
             contentDimensions:
               defaultDimensionSpacePoint:

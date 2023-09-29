@@ -2,12 +2,47 @@
 Feature: Basic redirect handling with document nodes without dimensions
 
   Background:
-    Given I have no content dimensions
+    Given using no content dimensions
+    And using the following node types:
+    """yaml
+    'Neos.ContentRepository:Root': []
+
+    'Neos.Neos:Sites':
+      superTypes:
+        'Neos.ContentRepository:Root': true
+    'Neos.Neos:Document':
+      properties:
+        uriPathSegment:
+          type: string
+
+    'Neos.Neos:Test.Redirect.Page':
+      superTypes:
+        'Neos.Neos:Document': true
+      constraints:
+        nodeTypes:
+          '*': true
+          'Neos.Neos:Test.Redirect.Page': true
+      properties:
+        title:
+          type: string
+
+    'Neos.Neos:Test.Redirect.RestrictedPage':
+      superTypes:
+        'Neos.Neos:Document': true
+      constraints:
+        nodeTypes:
+          '*': true
+          'Neos.Neos:Test.Redirect.Page': true
+    """
+    And using identifier "default", I define a content repository
+    And I am in content repository "default"
     And I am user identified by "initiating-user-identifier"
     And the command CreateRootWorkspace is executed with payload:
-      | Key                | Value           |
-      | workspaceName      | "live"          |
-      | newContentStreamId | "cs-identifier" |
+      | Key                  | Value                |
+      | workspaceName        | "live"               |
+      | workspaceTitle       | "Live"               |
+      | workspaceDescription | "The live workspace" |
+      | newContentStreamId   | "cs-identifier"      |
     And the command CreateRootNodeAggregateWithNode is executed with payload:
       | Key             | Value             |
       | contentStreamId | "cs-identifier"   |
@@ -36,11 +71,12 @@ Feature: Basic redirect handling with document nodes without dimensions
       | restricted-by-nodetype | behat                 | Neos.Neos:Test.Redirect.RestrictedPage | {"uriPathSegment": "restricted-by-nodetype"} | node8    |
     And A site exists for node name "node1"
     And the sites configuration is:
-    """
+    """yaml
     Neos:
       Neos:
         sites:
           '*':
+            uriPathSuffix: '.html'
             contentRepository: default
             contentDimensions:
               resolver:

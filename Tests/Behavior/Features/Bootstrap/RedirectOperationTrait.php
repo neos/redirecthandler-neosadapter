@@ -1,5 +1,4 @@
 <?php
-namespace Neos\RedirectHandler\NeosAdapter\Tests\Behavior\Features\Bootstrap;
 
 /*
  * This file is part of the Neos.RedirectHandler.NeosAdapter package.
