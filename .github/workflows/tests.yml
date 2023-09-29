@@ -89,7 +89,7 @@ jobs:
     - name: Composer Install
       run: |
         cd ${NEOS_BASE_FOLDER}
-        composer install --no-interaction --no-progress
+        composer update --no-interaction --no-progress
 
     - name: Setup Flow configuration
       run: |
