@@ -111,6 +111,7 @@ jobs:
     - name: Run Functional tests
       run: |
         cd ${NEOS_BASE_FOLDER}
+        FLOW_CONTEXT=Testing ./flow doctrine:migrate --quiet
         CATCHUPTRIGGER_ENABLE_SYNCHRONOUS_OPTION=1 bin/behat -c Packages/Application/Neos.RedirectHandler.NeosAdapter/Tests/Behavior/behat.yml.dist
         
     - name: Show log on failure
