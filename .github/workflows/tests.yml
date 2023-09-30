@@ -116,8 +116,6 @@ jobs:
     - name: Setup CR
       run: |
         cd ${NEOS_BASE_FOLDER}
-        ./flow
-        ./flow configuration:show --path Neos.ContentRepositoryRegistry
         ./flow cr:setup
 
     - name: Run Functional tests
