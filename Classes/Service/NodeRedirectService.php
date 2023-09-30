@@ -309,5 +309,4 @@ final class NodeRedirectService
 
         return $this->hostnamesRuntimeCache[$siteNodeName->value];
     }
-
 }
