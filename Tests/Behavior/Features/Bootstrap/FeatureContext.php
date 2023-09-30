@@ -15,6 +15,7 @@ use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\BehavioralTests\TestSuite\Behavior\GherkinTableNodeBasedContentDimensionSourceFactory;
 use Neos\ContentRepository\BehavioralTests\TestSuite\Behavior\GherkinPyStringNodeBasedNodeTypeManagerFactory;
 
+require_once(__DIR__ . '/../../../../../../Application/Neos.Behat/Tests/Behat/FlowContextTrait.php');
 require_once(__DIR__ . '/../../../../../../Neos/Neos.Neos/Tests/Behavior/Features/Bootstrap/RoutingTrait.php');
 
 /**
