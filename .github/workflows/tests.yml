@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     env:
-      FLOW_CONTEXT: Testing/Behat
+      FLOW_CONTEXT: Testing
       NEOS_TARGET_VERSION: '9.0'
       NEOS_BASE_FOLDER: neos-base-distribution
       PACKAGE_FOLDER: redirect-neosadapter
@@ -94,9 +94,9 @@ jobs:
     - name: Setup Flow configuration
       run: |
         cd ${NEOS_BASE_FOLDER} 
-        mkdir -p Configuration/Testing/Behat
-        rm -f Configuration/Testing/Behat/Settings.yaml
-        cat <<EOF >> Configuration/Testing/Behat/Settings.yaml
+        mkdir -p Configuration/Testing
+        rm -f Configuration/Testing/Settings.yaml
+        cat <<EOF >> Configuration/Testing/Settings.yaml
         Neos:
           Flow:
             persistence:
