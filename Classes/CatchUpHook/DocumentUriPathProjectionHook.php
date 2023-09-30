@@ -49,7 +49,6 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
             NodeAggregateWasMoved::class => $this->onBeforeNodeAggregateWasMoved($eventInstance),
             default => null
         };
-
     }
 
     public function onAfterEvent(EventInterface $eventInstance, EventEnvelope $eventEnvelope): void
