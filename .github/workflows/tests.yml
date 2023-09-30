@@ -108,15 +108,6 @@ jobs:
                 dbname: 'neos_functional_testing'
         EOF
 
-    - name: Install behat
-      run: |
-        cd ${NEOS_BASE_FOLDER}
-        cp -R Packages/Neos/Neos.ContentRepository.BehavioralTests/DistributionBehatTemplate/ Build/Behat
-        pushd Build/Behat/
-        rm composer.lock || true
-        composer install
-        popd
-
     - name: Run Functional tests
       run: |
         cd ${NEOS_BASE_FOLDER}
