@@ -58,23 +58,6 @@ Restrict redirect generation by node type.
       restrictByNodeType:
         Neos.Neos:Document: true
 
-restrictByPathPrefix
-^^^^^^^^^^^^^^^^^^^^
-
-Restrict redirect generation by node path prefix.
-
-**Note**: No redirect will be created if you move a node within the restricted path or if you move it away from the
-restricted path. But if you move a node into the restricted path the restriction rule will not apply, because the
-restriction is based on the source node path.
-
-.. code-block:: yaml
-
-  Neos:
-   RedirectHandler:
-     NeosAdapter:
-       restrictByPathPrefix:
-         - '/sites/neosdemo': true
-
 restrictByOldUriPrefix
 ^^^^^^^^^^^^^^^^^^^^^^
 

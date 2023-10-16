@@ -9,19 +9,40 @@ on:
 jobs:
   build:
     env:
-      FLOW_TARGET_VERSION: 6.3
       FLOW_CONTEXT: Testing
-      FLOW_FOLDER: ../flow-base-distribution
+      NEOS_TARGET_VERSION: '9.0'
+      NEOS_BASE_FOLDER: neos-base-distribution
+      PACKAGE_FOLDER: redirect-neosadapter
 
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['7.4']
+        php-versions: ['8.2']
+
+    services:
+      mariadb:
+        # see https://mariadb.com/kb/en/mariadb-server-release-dates/
+        # this should be a current release, e.g. the LTS version
+        image: mariadb:10.8
+        env:
+          MYSQL_USER: neos
+          MYSQL_PASSWORD: neos
+          MYSQL_DATABASE: neos_functional_testing
+          MYSQL_ROOT_PASSWORD: neos
+        ports:
+          - "3306:3306"
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        path: ${{ env.PACKAGE_FOLDER }}
+
+    - name: Set package branch name
+      run: echo "PACKAGE_TARGET_VERSION=${GITHUB_BASE_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
+      working-directory: .
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
@@ -48,21 +69,62 @@ jobs:
         path: ~/.composer/cache
         key: dependencies-composer-${{ hashFiles('composer.json') }}
 
-    - name: Prepare Flow distribution
-      run: |
-        git clone https://github.com/neos/flow-base-distribution.git -b ${FLOW_TARGET_VERSION} ${FLOW_FOLDER}
-        cd ${FLOW_FOLDER}
-        composer require --no-update --no-interaction neos/redirecthandler-databasestorage:~4.0
-        composer require --no-update --no-interaction neos/redirecthandler-neosadapter:~4.0
+    - name: Checkout development distribution
+      uses: actions/checkout@v2
+      with:
+        repository: neos/neos-development-distribution
+        ref: ${{ env.NEOS_TARGET_VERSION }}
+        path: ${{ env.NEOS_BASE_FOLDER }}
 
-    - name: Install distribution
+    - name: Prepare external packages for development distribution
       run: |
-        cd ${FLOW_FOLDER}
-        composer install --no-interaction --no-progress
-        rm -rf Packages/Application/Neos.RedirectHandler.NeosAdapter
-        cp -r ../redirecthandler-neosadapter Packages/Application/Neos.RedirectHandler.NeosAdapter
+        cd ${NEOS_BASE_FOLDER}
+        composer require --no-update --no-interaction neos/redirecthandler:"^6.0"
+        composer require --no-update --no-interaction neos/redirecthandler-databasestorage:"^6.0"
+        
+        git -C ../${{ env.PACKAGE_FOLDER }} checkout -b build
+        composer config repositories.package '{ "type": "path", "url": "../${{ env.PACKAGE_FOLDER }}", "options": { "symlink": false } }'
+        composer require --no-update --no-interaction neos/redirecthandler-neosadapter:"dev-build as dev-${PACKAGE_TARGET_VERSION}"
+
+    - name: Composer Install
+      run: |
+        cd ${NEOS_BASE_FOLDER}
+        composer update --no-interaction --no-progress
+
+    - name: Setup Flow configuration
+      run: |
+        cd ${NEOS_BASE_FOLDER} 
+        mkdir -p Configuration/Testing
+        rm -f Configuration/Testing/Settings.yaml
+        cat <<EOF >> Configuration/Testing/Settings.yaml
+        Neos:
+          Flow:
+            persistence:
+              backendOptions:
+                host: '127.0.0.1'
+                driver: pdo_mysql
+                user: 'neos'
+                password: 'neos'
+                dbname: 'neos_functional_testing'
+        EOF
+
+    - name: Setup database schema
+      run: |
+        cd ${NEOS_BASE_FOLDER}
+        ./flow doctrine:migrate --quite
+
+    - name: Setup CR
+      run: |
+        cd ${NEOS_BASE_FOLDER}
+        ./flow cr:setup
 
     - name: Run Functional tests
       run: |
-        cd ${FLOW_FOLDER}
-        bin/phpunit --colors -c Build/BuildEssentials/PhpUnit/FunctionalTests.xml Packages/Application/Neos.RedirectHandler.NeosAdapter/Tests/Functional/*
+        cd ${NEOS_BASE_FOLDER}
+        CATCHUPTRIGGER_ENABLE_SYNCHRONOUS_OPTION=1 bin/behat -c Packages/Application/Neos.RedirectHandler.NeosAdapter/Tests/Behavior/behat.yml.dist
+
+    - name: Show log on failure
+      if: ${{ failure()  }}
+      run: |
+        cd ${NEOS_BASE_FOLDER}
+        cat Data/Logs/System_Testing.log
