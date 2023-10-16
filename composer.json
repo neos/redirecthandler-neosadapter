@@ -4,8 +4,10 @@
     "description": "Neos Redirect Handler",
     "license": "GPL-3.0-or-later",
     "require": {
-        "neos/redirecthandler": "~3.0 || ~4.0 || ~5.0 || dev-master",
-        "neos/neos": "~4.3 || ~5.0 || ~7.0 || ~8.0 || dev-master"
+        "php": ">=8.2",
+        "neos/redirecthandler": "~6.0 || dev-main",
+        "neos/neos": "^9.0",
+        "neos/flow": "^9.0"
     },
     "autoload": {
         "psr-4": {
@@ -14,7 +16,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "4.0.x-dev"
+            "dev-main": "4.0.x-dev"
         },
         "applied-flow-migrations": [
             "TYPO3.FLOW3-201209201112",

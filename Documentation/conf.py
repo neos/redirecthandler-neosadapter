@@ -27,9 +27,9 @@ copyright = u'2016 and onwards by the authors'
 author = u'Neos Team and Contributors'
 
 # The short X.Y version.
-version = '4.3'
+version = '5.0'
 # The full version, including alpha/beta/rc tags.
-release = '4.3.x-dev'
+release = '5.0.x-dev'
 
 # -- General configuration ---------------------------------------------------
 

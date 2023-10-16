@@ -1,5 +1,4 @@
 <?php
-namespace Neos\RedirectHandler\NeosAdapter\Tests\Behavior\Features\Bootstrap;
 
 /*
  * This file is part of the Neos.RedirectHandler.NeosAdapter package.
@@ -39,20 +38,6 @@ trait RedirectOperationTrait
     }
 
     /**
-     * @Then /^A redirect should be created for the node with path "([^"]*)" and with the following context:$/
-     */
-    public function aRedirectShouldBeCreatedForTheNodeWithPathAndWithTheFollowingContext($path, $table): void
-    {
-        $rows = $table->getHash();
-        $context = $this->getContextForProperties($rows[0]);
-        $workspace = $context->getWorkspace();
-        $redirectNode = $context->getNode($path);
-        $redirectService = $this->objectManager->get(NodeRedirectService::class);
-
-        $redirectService->createRedirectsForPublishedNode($redirectNode, $workspace);
-    }
-
-    /**
      *  @Given /^I should have a redirect with sourceUri "([^"]*)" and targetUri "([^"]*)"$/
      */
     public function iShouldHaveARedirectWithSourceUriAndTargetUri($sourceUri, $targetUri): void
@@ -73,6 +58,26 @@ trait RedirectOperationTrait
     }
 
     /**
+     *  @Given /^I should have a redirect with sourceUri "([^"]*)" and statusCode "([^"]*)"$/
+     */
+    public function iShouldHaveARedirectWithSourceUriAndStatus($sourceUri, $statusCode): void
+    {
+        $nodeRedirectStorage = $this->objectManager->get(RedirectStorage::class);
+
+        $redirect = $nodeRedirectStorage->getOneBySourceUriPathAndHost($sourceUri);
+
+        if ($redirect !== null) {
+            Assert::assertEquals(
+                $statusCode,
+                $redirect->getStatusCode(),
+                'A redirect was created, but the status code does not match'
+            );
+        } else {
+            Assert::assertNotNull($redirect, 'No redirect was created for asserted sourceUri');
+        }
+    }
+
+    /**
      *  @Given /^I should have no redirect with sourceUri "([^"]*)" and targetUri "([^"]*)"$/
      */
     public function iShouldHaveNoRedirectWithSourceUriAndTargetUri($sourceUri, $targetUri): void
@@ -84,11 +89,11 @@ trait RedirectOperationTrait
             Assert::assertNotEquals(
                 $targetUri,
                 $redirect->getTargetUriPath(),
-                'An untwanted redirect was created for given source and target URI'
+                'An unwanted redirect was created for given source and target URI'
             );
+        } else {
+            Assert::assertNull($redirect);
         }
-
-        Assert::assertNull($redirect);
     }
 
     /**

@@ -6,9 +6,6 @@ Neos:
       # For example redirect to dedicated landing pages for deleted campaign NodeTypes
       enableRemovedNodeRedirect: true
 
-      pathPrefixConfiguration: []
-      #  '/sites/neosdemo/': false
-
       restrictByNodeType: []
       #  Neos.Neos:Document: true
 
@@ -18,3 +15,22 @@ Neos:
       # in some cases you might need to completely disable the automatic redirects
       # e.g. on cli, during imports or similar
       enableAutomaticRedirects: true
+
+
+  ContentRepositoryRegistry:
+    presets:
+      'default':
+        projections:
+          'Neos.Neos:DocumentUriPathProjection':
+            catchUpHooks:
+              'Neos.RedirectHandler.NeosAdapter:DocumentUriPathProjectionHook':
+                factoryObjectName: Neos\RedirectHandler\NeosAdapter\CatchUpHook\DocumentUriPathProjectionHookFactory
+
+  Flow:
+    # TODO remove this temporary hack once neos is fixed.
+    object:
+      includeClasses:
+        "Neos.ContentRepository.TestSuite":
+          - "(*FAIL)"
+        "Neos.ContentRepositoryRegistry":
+          - "Neos\\\\ContentRepositoryRegistry\\\\(?!TestSuite\\\\Behavior\\\\CRRegistrySubjectProvider)"
