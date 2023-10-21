@@ -20,7 +20,6 @@ final class DocumentUriPathProjectionHookFactory implements CatchUpHookFactoryIn
     {
         return new DocumentUriPathProjectionHook(
             $contentRepository,
-            $this->contentRepositoryRegistry,
             $this->redirectService
         );
     }
