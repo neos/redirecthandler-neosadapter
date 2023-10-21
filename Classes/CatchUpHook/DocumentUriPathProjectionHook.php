@@ -31,7 +31,6 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
 
     public function __construct(
         private readonly ContentRepository $contentRepository,
-        private readonly ContentRepositoryRegistry $contentRepositoryRegistry,
         private readonly NodeRedirectService $nodeRedirectService,
     ) {
     }

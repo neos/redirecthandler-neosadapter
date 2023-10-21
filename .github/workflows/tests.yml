@@ -13,6 +13,7 @@ jobs:
       NEOS_TARGET_VERSION: '9.0'
       NEOS_BASE_FOLDER: neos-base-distribution
       PACKAGE_FOLDER: redirect-neosadapter
+      COMPOSER_ALLOW_SUPERUSER: 1
 
     runs-on: ubuntu-latest
 
