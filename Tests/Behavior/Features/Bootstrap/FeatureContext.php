@@ -1,58 +1,36 @@
 <?php
 
-use Neos\Flow\ObjectManagement\ObjectManagerInterface;
-use Neos\Behat\Tests\Behat\FlowContextTrait;
-use Neos\Flow\Utility\Environment;
-use Neos\Neos\Tests\Functional\Command\BehatTestHelper;
-use Neos\ContentRepository\TestSuite\Behavior\Features\Bootstrap\CRTestSuiteTrait;
 use Behat\Behat\Context\Context;
+use Neos\Behat\FlowBootstrapTrait;
+use Neos\Behat\FlowEntitiesTrait;
 use Neos\ContentRepository\BehavioralTests\TestSuite\Behavior\CRBehavioralTestsSubjectProvider;
-use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
+use Neos\ContentRepository\BehavioralTests\TestSuite\Behavior\GherkinPyStringNodeBasedNodeTypeManagerFactory;
+use Neos\ContentRepository\BehavioralTests\TestSuite\Behavior\GherkinTableNodeBasedContentDimensionSourceFactory;
+use Neos\ContentRepository\Core\ContentRepository;
+use Neos\ContentRepository\Core\Factory\ContentRepositoryId;
 use Neos\ContentRepository\Core\Factory\ContentRepositoryServiceFactoryInterface;
 use Neos\ContentRepository\Core\Factory\ContentRepositoryServiceInterface;
-use Neos\ContentRepository\Core\Factory\ContentRepositoryId;
-use Neos\ContentRepository\Core\ContentRepository;
-use Neos\ContentRepository\BehavioralTests\TestSuite\Behavior\GherkinTableNodeBasedContentDimensionSourceFactory;
-use Neos\ContentRepository\BehavioralTests\TestSuite\Behavior\GherkinPyStringNodeBasedNodeTypeManagerFactory;
+use Neos\ContentRepository\TestSuite\Behavior\Features\Bootstrap\CRTestSuiteTrait;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 
-require_once(__DIR__ . '/../../../../../../Application/Neos.Behat/Tests/Behat/FlowContextTrait.php');
 require_once(__DIR__ . '/../../../../../../Neos/Neos.Neos/Tests/Behavior/Features/Bootstrap/RoutingTrait.php');
 
-/**
- * Features context
- */
 class FeatureContext implements Context
 {
-    use FlowContextTrait;
+    use FlowBootstrapTrait;
+    use FlowEntitiesTrait;
     use CRTestSuiteTrait;
     use CRBehavioralTestsSubjectProvider;
 
     use RoutingTrait;
     use RedirectOperationTrait;
 
-    /**
-     * @var string
-     */
-    protected $behatTestHelperObjectName = BehatTestHelper::class;
-
-    /**
-     * @var ObjectManagerInterface
-     */
-    protected $objectManager;
-
-    /**
-     * @var Environment
-     */
-    protected $environment;
+    private ContentRepositoryRegistry $contentRepositoryRegistry;
 
     public function __construct()
     {
-        if (self::$bootstrap === null) {
-            self::$bootstrap = $this->initializeFlow();
-        }
-        $this->objectManager = self::$bootstrap->getObjectManager();
-        $this->contentRepositoryRegistry = $this->objectManager->get(ContentRepositoryRegistry::class);
-
+        self::bootstrapFlow();
+        $this->contentRepositoryRegistry = $this->getObject(ContentRepositoryRegistry::class);
         $this->setupCRTestSuiteTrait();
     }
 

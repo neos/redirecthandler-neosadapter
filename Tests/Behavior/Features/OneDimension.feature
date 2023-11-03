@@ -1,4 +1,4 @@
-@fixtures @contentrepository
+@flowEntities
 Feature: Basic redirect handling with document nodes in one dimension
 
   Background:
