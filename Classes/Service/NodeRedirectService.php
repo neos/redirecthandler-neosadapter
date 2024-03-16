@@ -76,13 +76,9 @@ final class NodeRedirectService
     protected array $restrictByNodeType = [];
 
     public function __construct(
-        #[Flow\Inject]
         protected RedirectStorageInterface $redirectStorage,
-        #[Flow\Inject]
         protected PersistenceManagerInterface $persistenceManager,
-        #[Flow\Inject]
         protected ContentRepositoryRegistry $contentRepositoryRegistry,
-        #[Flow\Inject]
         protected SiteRepository $siteRepository,
     ) {
     }
