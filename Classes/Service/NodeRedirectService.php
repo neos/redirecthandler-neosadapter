@@ -22,7 +22,7 @@ use Neos\RedirectHandler\Storage\RedirectStorageInterface;
 use Psr\Log\LoggerInterface;
 use Neos\ContentRepository\Core\NodeType\NodeType;
 use Neos\Neos\FrontendRouting\NodeUriBuilder;
-use Neos\ContentRepository\Core\Factory\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use GuzzleHttp\Psr7\ServerRequest;
 use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use Neos\Flow\Mvc\ActionRequest;
