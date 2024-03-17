@@ -18,14 +18,22 @@ use PHPUnit\Framework\Assert;
 trait RedirectOperationTrait
 {
     /**
+     * @template T of object
+     * @param class-string<T> $className
+     *
+     * @return T
+     */
+    abstract private function getObject(string $className): object;
+
+    /**
      * @Given /^I have the following redirects:$/
      * @When /^I create the following redirects:$/
      */
     public function iHaveTheFollowingRedirects($table): void
     {
         $rows = $table->getHash();
-        $nodeRedirectStorage = $this->objectManager->get(RedirectStorage::class);
-        $redirectRepository = $this->objectManager->get(RedirectRepository::class);
+        $nodeRedirectStorage = $this->getObject(RedirectStorage::class);
+        $redirectRepository = $this->getObject(RedirectRepository::class);
 
         foreach ($rows as $row) {
             $nodeRedirectStorage->addRedirect(
@@ -42,7 +50,7 @@ trait RedirectOperationTrait
      */
     public function iShouldHaveARedirectWithSourceUriAndTargetUri($sourceUri, $targetUri): void
     {
-        $nodeRedirectStorage = $this->objectManager->get(RedirectStorage::class);
+        $nodeRedirectStorage = $this->getObject(RedirectStorage::class);
 
         $redirect = $nodeRedirectStorage->getOneBySourceUriPathAndHost($sourceUri);
 
@@ -62,7 +70,7 @@ trait RedirectOperationTrait
      */
     public function iShouldHaveARedirectWithSourceUriAndStatus($sourceUri, $statusCode): void
     {
-        $nodeRedirectStorage = $this->objectManager->get(RedirectStorage::class);
+        $nodeRedirectStorage = $this->getObject(RedirectStorage::class);
 
         $redirect = $nodeRedirectStorage->getOneBySourceUriPathAndHost($sourceUri);
 
@@ -82,7 +90,7 @@ trait RedirectOperationTrait
      */
     public function iShouldHaveNoRedirectWithSourceUriAndTargetUri($sourceUri, $targetUri): void
     {
-        $nodeRedirectStorage = $this->objectManager->get(RedirectStorage::class);
+        $nodeRedirectStorage = $this->getObject(RedirectStorage::class);
         $redirect = $nodeRedirectStorage->getOneBySourceUriPathAndHost($sourceUri);
 
         if ($redirect !== null) {
@@ -101,7 +109,7 @@ trait RedirectOperationTrait
      */
     public function iShouldHaveNoRedirectWithSourceUri($sourceUri): void
     {
-        $nodeRedirectStorage = $this->objectManager->get(RedirectStorage::class);
+        $nodeRedirectStorage = $this->getObject(RedirectStorage::class);
 
         $redirect = $nodeRedirectStorage->getOneBySourceUriPathAndHost($sourceUri);
 
