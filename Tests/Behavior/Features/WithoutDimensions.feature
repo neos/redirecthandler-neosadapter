@@ -48,7 +48,6 @@ Feature: Basic redirect handling with document nodes without dimensions
       | contentStreamId | "cs-identifier"   |
       | nodeAggregateId | "site-root"       |
       | nodeTypeName    | "Neos.Neos:Sites" |
-    And the graph projection is fully up to date
 
     # site-root
     #   behat
@@ -82,7 +81,6 @@ Feature: Basic redirect handling with document nodes without dimensions
               resolver:
                 factoryClassName: Neos\Neos\FrontendRouting\DimensionResolution\Resolver\NoopResolverFactory
     """
-    And The documenturipath projection is up to date
 
   @fixtures
   Scenario: Move a node down into different node and a redirect will be created
@@ -93,8 +91,7 @@ Feature: Basic redirect handling with document nodes without dimensions
       | dimensionSpacePoint                 | {}              |
       | newParentNodeAggregateId            | "company"       |
       | newSucceedingSiblingNodeAggregateId | null            |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "imprint.html" and targetUri "company/imprint.html"
+        Then I should have a redirect with sourceUri "imprint.html" and targetUri "company/imprint.html"
 
   Scenario: Move a node up into different node and a redirect will be created
     When the command MoveNodeAggregate is executed with payload:
@@ -104,8 +101,7 @@ Feature: Basic redirect handling with document nodes without dimensions
       | dimensionSpacePoint                 | {}              |
       | newParentNodeAggregateId            | "behat"         |
       | newSucceedingSiblingNodeAggregateId | null            |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "company/service.html" and targetUri "service.html"
+        Then I should have a redirect with sourceUri "company/service.html" and targetUri "service.html"
 
   @fixtures
   Scenario: Change the the `uriPathSegment` and a redirect will be created
@@ -115,8 +111,7 @@ Feature: Basic redirect handling with document nodes without dimensions
       | nodeAggregateId           | "company"                       |
       | originDimensionSpacePoint | {}                              |
       | propertyValues            | {"uriPathSegment": "evil-corp"} |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "company.html" and targetUri "evil-corp.html"
+        Then I should have a redirect with sourceUri "company.html" and targetUri "evil-corp.html"
     And I should have a redirect with sourceUri "company/service.html" and targetUri "evil-corp/service.html"
 
   @fixtures
@@ -133,7 +128,6 @@ Feature: Basic redirect handling with document nodes without dimensions
       | nodeAggregateId           | "company"                            |
       | originDimensionSpacePoint | {}                                   |
       | propertyValues            | {"uriPathSegment": "more-evil-corp"} |
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "company.html" and targetUri "more-evil-corp.html"
     And I should have a redirect with sourceUri "company/service.html" and targetUri "more-evil-corp/service.html"
@@ -152,8 +146,7 @@ Feature: Basic redirect handling with document nodes without dimensions
       | nodeAggregateId           | "company"                        |
       | originDimensionSpacePoint | {}                               |
       | propertyValues            | {"uriPathSegment": "my-company"} |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "company.html" and targetUri "my-company.html"
+        Then I should have a redirect with sourceUri "company.html" and targetUri "my-company.html"
     And I should have no redirect with sourceUri "company.html" and targetUri "company-old.html"
     And I should have a redirect with sourceUri "company/service.html" and targetUri "my-company/service.html"
 
@@ -165,8 +158,7 @@ Feature: Basic redirect handling with document nodes without dimensions
       | nodeAggregateId           | "buy"               |
       | originDimensionSpacePoint | {}                  |
       | propertyValues            | {"title": "my-buy"} |
-    And The documenturipath projection is up to date
-    Then I should have no redirect with sourceUri "buy.html"
+        Then I should have no redirect with sourceUri "buy.html"
 
   @fixtures
   Scenario: No redirect should be created for an restricted node by nodetype
@@ -176,8 +168,7 @@ Feature: Basic redirect handling with document nodes without dimensions
       | nodeAggregateId           | "restricted-by-nodetype"                         |
       | originDimensionSpacePoint | {}                                               |
       | propertyValues            | {"uriPathSegment": "restricted-by-nodetype-new"} |
-    And The documenturipath projection is up to date
-    Then I should have no redirect with sourceUri "restricted.html"
+        Then I should have no redirect with sourceUri "restricted.html"
 
   @fixtures
   Scenario: Redirects should be created for a hidden node
@@ -187,15 +178,13 @@ Feature: Basic redirect handling with document nodes without dimensions
       | nodeAggregateId              | "mail"          |
       | coveredDimensionSpacePoint   | {}              |
       | nodeVariantSelectionStrategy | "allVariants"   |
-    And the graph projection is fully up to date
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                          |
       | contentStreamId           | "cs-identifier"                |
       | nodeAggregateId           | "mail"                         |
       | originDimensionSpacePoint | {}                             |
       | propertyValues            | {"uriPathSegment": "not-mail"} |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "mail.html" and targetUri "not-mail.html"
+        Then I should have a redirect with sourceUri "mail.html" and targetUri "not-mail.html"
 
   @fixtures
   Scenario: A removed node should lead to a GONE response with empty target uri
@@ -204,8 +193,6 @@ Feature: Basic redirect handling with document nodes without dimensions
       | contentStreamId              | "cs-identifier" |
       | nodeAggregateId              | "company"       |
       | nodeVariantSelectionStrategy | "allVariants"   |
-    And the graph projection is fully up to date
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "company.html" and statusCode "410"
     And I should have a redirect with sourceUri "company.html" and targetUri ""

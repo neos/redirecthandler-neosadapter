@@ -48,7 +48,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId | "site-root"       |
       | nodeTypeName    | "Neos.Neos:Sites" |
       | contentStreamId | "cs-identifier"   |
-    And the graph projection is fully up to date
 
     # site-root
     #   behat
@@ -113,7 +112,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId | "imprint"         |
       | sourceOrigin    | {"language":"en"} |
       | targetOrigin    | {"language":"de"} |
-    And The documenturipath projection is up to date
 
   @fixtures
   Scenario: Move a node down into different node and a redirect will be created
@@ -124,8 +122,7 @@ Feature: Basic redirect handling with document nodes in one dimension
       | dimensionSpacePoint                 | {"language": "en"} |
       | newParentNodeAggregateId            | "company"          |
       | newSucceedingSiblingNodeAggregateId | null               |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "en/imprint.html" and targetUri "en/company/imprint.html"
+        Then I should have a redirect with sourceUri "en/imprint.html" and targetUri "en/company/imprint.html"
     And I should have a redirect with sourceUri "imprint.html" and targetUri "company/imprint.html"
     And I should have a redirect with sourceUri "ch/imprint.html" and targetUri "ch/company/imprint.html"
 
@@ -138,8 +135,7 @@ Feature: Basic redirect handling with document nodes in one dimension
       | dimensionSpacePoint                 | {"language": "en"} |
       | newParentNodeAggregateId            | "behat"            |
       | newSucceedingSiblingNodeAggregateId | null               |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "en/company/service.html" and targetUri "en/service.html"
+        Then I should have a redirect with sourceUri "en/company/service.html" and targetUri "en/service.html"
     And I should have a redirect with sourceUri "company/service.html" and targetUri "service.html"
     And I should have a redirect with sourceUri "ch/company/service.html" and targetUri "ch/service.html"
 
@@ -151,7 +147,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId           | "company"                       |
       | originDimensionSpacePoint | {"language": "en"}              |
       | propertyValues            | {"uriPathSegment": "evil-corp"} |
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "en/company.html" and targetUri "en/evil-corp.html"
     And I should have a redirect with sourceUri "en/company/about.html" and targetUri "en/evil-corp/about.html"
@@ -180,7 +175,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId           | "company"                            |
       | originDimensionSpacePoint | {"language": "en"}                   |
       | propertyValues            | {"uriPathSegment": "more-evil-corp"} |
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "en/company.html" and targetUri "en/more-evil-corp.html"
     And I should have a redirect with sourceUri "en/company/service.html" and targetUri "en/more-evil-corp/service.html"
@@ -199,8 +193,7 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId           | "company"                        |
       | originDimensionSpacePoint | {"language": "en"}               |
       | propertyValues            | {"uriPathSegment": "my-company"} |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "en/company.html" and targetUri "en/my-company.html"
+        Then I should have a redirect with sourceUri "en/company.html" and targetUri "en/my-company.html"
     And I should have no redirect with sourceUri "en/company.html" and targetUri "en/company-old.html"
     And I should have a redirect with sourceUri "en/company/service.html" and targetUri "en/my-company/service.html"
 
@@ -212,8 +205,7 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId           | "buy"               |
       | originDimensionSpacePoint | {"language": "en"}  |
       | propertyValues            | {"title": "my-buy"} |
-    And The documenturipath projection is up to date
-    Then I should have no redirect with sourceUri "en/buy.html"
+        Then I should have no redirect with sourceUri "en/buy.html"
 
   @fixtures
   Scenario: No redirect should be created for an restricted node by nodetype
@@ -223,8 +215,7 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId           | "restricted-by-nodetype"                         |
       | originDimensionSpacePoint | {"language": "en"}                               |
       | propertyValues            | {"uriPathSegment": "restricted-by-nodetype-new"} |
-    And The documenturipath projection is up to date
-    Then I should have no redirect with sourceUri "en/restricted.html"
+        Then I should have no redirect with sourceUri "en/restricted.html"
 
 #  @fixtures
 #  Scenario: Redirects should be created for a hidden node
@@ -234,15 +225,13 @@ Feature: Basic redirect handling with document nodes in one dimension
 #      | nodeAggregateId              | "mail"             |
 #      | coveredDimensionSpacePoint   | {"language": "en"} |
 #      | nodeVariantSelectionStrategy | "allVariants"      |
-#    And the graph projection is fully up to date
-#    When the command SetNodeProperties is executed with payload:
+##    When the command SetNodeProperties is executed with payload:
 #      | Key                       | Value                          |
 #      | contentStreamId           | "cs-identifier"                |
 #      | nodeAggregateId           | "mail"                         |
 #      | originDimensionSpacePoint | {"language": "en"}             |
 #      | propertyValues            | {"uriPathSegment": "not-mail"} |
-#    And The documenturipath projection is up to date
-#    Then I should have a redirect with sourceUri "en/mail.html" and targetUri "en/not-mail.html"
+#    #    Then I should have a redirect with sourceUri "en/mail.html" and targetUri "en/not-mail.html"
 
   @fixtures
   Scenario: Change the the `uriPathSegment` and a redirect will be created also for fallback
@@ -253,7 +242,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId           | "company"                         |
       | originDimensionSpacePoint | {"language": "de"}                |
       | propertyValues            | {"uriPathSegment": "unternehmen"} |
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "company.html" and targetUri "unternehmen.html"
     And I should have a redirect with sourceUri "company/service.html" and targetUri "unternehmen/service.html"
@@ -269,8 +257,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId              | "company"            |
       | coveredDimensionSpacePoint   | {"language": "en"}   |
       | nodeVariantSelectionStrategy | "allSpecializations" |
-    And the graph projection is fully up to date
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "en/company.html" and statusCode "410"
     And I should have a redirect with sourceUri "en/company.html" and targetUri ""
@@ -290,8 +276,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId              | "company"          |
       | coveredDimensionSpacePoint   | {"language": "de"} |
       | nodeVariantSelectionStrategy | "allVariants"      |
-    And the graph projection is fully up to date
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "en/company.html" and statusCode "410"
     And I should have a redirect with sourceUri "en/company.html" and targetUri ""
@@ -316,8 +300,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | nodeAggregateId              | "company"            |
       | nodeVariantSelectionStrategy | "allSpecializations" |
       | coveredDimensionSpacePoint   | {"language": "de"}   |
-    And the graph projection is fully up to date
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "company.html" and statusCode "410"
     And I should have a redirect with sourceUri "company.html" and targetUri ""
