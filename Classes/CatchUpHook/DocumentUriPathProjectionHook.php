@@ -12,13 +12,11 @@ use Neos\ContentRepository\Core\Feature\NodeRemoval\Event\NodeAggregateWasRemove
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
 use Neos\ContentRepository\Core\SharedModel\Workspace\ContentStreamId;
 use Neos\Neos\FrontendRouting\Projection\DocumentUriPathFinder;
-use Neos\ContentRepository\Core\Feature\NodeMove\Dto\CoverageNodeMoveMapping;
 use Neos\Neos\FrontendRouting\Projection\DocumentNodeInfo;
 use Neos\Neos\FrontendRouting\Exception\NodeNotFoundException;
 use Neos\Neos\FrontendRouting\NodeAddress;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
-use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Neos\FrontendRouting\NodeAddressFactory;
 
 final class DocumentUriPathProjectionHook implements CatchUpHookInterface
@@ -197,25 +195,21 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
             return;
         }
 
-        foreach ($event->nodeMoveMappings as $moveMapping) {
-            /* @var \Neos\ContentRepository\Core\Feature\NodeMove\Dto\OriginNodeMoveMapping $moveMapping */
-            foreach ($moveMapping->newLocations as $newLocation) {
-                /* @var $newLocation CoverageNodeMoveMapping */
-                $node = $this->findNodeByIdAndDimensionSpacePointHash($event->nodeAggregateId, $newLocation->coveredDimensionSpacePoint->hash);
-                if ($node === null) {
-                    // node probably no document node, skip
-                    continue;
-                }
-
-                $closure($node, $this->getNodeAddress($event->contentStreamId, $newLocation->coveredDimensionSpacePoint, $node->getNodeAggregateId()), $this->contentRepository->id);
-
-                $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
-                array_map(fn (DocumentNodeInfo $descendantOfNode) => $closure(
-                    $descendantOfNode,
-                    $this->getNodeAddress($event->contentStreamId, $newLocation->coveredDimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
-                    $this->contentRepository->id
-                ), iterator_to_array($descendantsOfNode));
+        foreach ($event->succeedingSiblingsForCoverage as $interdimensionalSibling) {
+            $node = $this->findNodeByIdAndDimensionSpacePointHash($event->nodeAggregateId, $interdimensionalSibling->dimensionSpacePoint->hash);
+            if ($node === null) {
+                // node probably no document node, skip
+                continue;
             }
+
+            $closure($node, $this->getNodeAddress($event->contentStreamId, $interdimensionalSibling->dimensionSpacePoint, $node->getNodeAggregateId()), $this->contentRepository->id);
+
+            $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
+            array_map(fn (DocumentNodeInfo $descendantOfNode) => $closure(
+                $descendantOfNode,
+                $this->getNodeAddress($event->contentStreamId, $interdimensionalSibling->dimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
+                $this->contentRepository->id
+            ), iterator_to_array($descendantsOfNode));
         }
     }
 
