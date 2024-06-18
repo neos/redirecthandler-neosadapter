@@ -5,6 +5,7 @@ namespace Neos\RedirectHandler\NeosAdapter\CatchUpHook;
 use Neos\ContentRepository\Core\Projection\CatchUpHookInterface;
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\EventStore\EventInterface;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\EventStore\Model\EventEnvelope;
 use Neos\ContentRepository\Core\Feature\NodeModification\Event\NodePropertiesWereSet;
 use Neos\ContentRepository\Core\Feature\NodeMove\Event\NodeAggregateWasMoved;
@@ -14,10 +15,7 @@ use Neos\ContentRepository\Core\SharedModel\Workspace\ContentStreamId;
 use Neos\Neos\FrontendRouting\Projection\DocumentUriPathFinder;
 use Neos\Neos\FrontendRouting\Projection\DocumentNodeInfo;
 use Neos\Neos\FrontendRouting\Exception\NodeNotFoundException;
-use Neos\Neos\FrontendRouting\NodeAddress;
-use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
-use Neos\Neos\FrontendRouting\NodeAddressFactory;
 
 final class DocumentUriPathProjectionHook implements CatchUpHookInterface
 {
@@ -85,8 +83,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
 
             $this->nodeRedirectService->appendAffectedNode(
                 $node,
-                $this->getNodeAddress($event->contentStreamId, $dimensionSpacePoint, $node->getNodeAggregateId()),
-                $this->contentRepository->id
+                NodeAddress::create($this->contentRepository->id, $event->workspaceName, $dimensionSpacePoint, $node->getNodeAggregateId())
             );
             $this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash][] = $node;
 
@@ -95,8 +92,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
                 function ($descendantOfNode) use ($event, $dimensionSpacePoint) {
                     $this->nodeRedirectService->appendAffectedNode(
                         $descendantOfNode,
-                        $this->getNodeAddress($event->contentStreamId, $dimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
-                        $this->contentRepository->id
+                        NodeAddress::create($this->contentRepository->id, $event->workspaceName, $dimensionSpacePoint, $descendantOfNode->getNodeAggregateId())
                     );
                     $this->documentNodeInfosBeforeRemoval[$dimensionSpacePoint->hash][] = $descendantOfNode;
                 },
@@ -144,6 +140,9 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
         );
     }
 
+    /**
+     * @param \Closure(DocumentNodeInfo $nodeInfo, NodeAddress $nodeAddress):void $closure
+     */
     private function handleNodePropertiesWereSet(NodePropertiesWereSet $event, \Closure $closure): void
     {
         if (!$this->isLiveContentStream($event->contentStreamId)) {
@@ -162,13 +161,12 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
                 continue;
             }
 
-            $closure($node, $this->getNodeAddress($event->contentStreamId, $affectedDimensionSpacePoint, $node->getNodeAggregateId()), $this->contentRepository->id);
+            $closure($node,  NodeAddress::create($this->contentRepository->id, $event->workspaceName, $affectedDimensionSpacePoint, $node->getNodeAggregateId()));
 
             $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
             array_map(fn (DocumentNodeInfo $descendantOfNode) => $closure(
                 $descendantOfNode,
-                $this->getNodeAddress($event->contentStreamId, $affectedDimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
-                $this->contentRepository->id
+                NodeAddress::create($this->contentRepository->id, $event->workspaceName, $affectedDimensionSpacePoint, $descendantOfNode->getNodeAggregateId())
             ), iterator_to_array($descendantsOfNode));
         }
     }
@@ -189,6 +187,9 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
         );
     }
 
+    /**
+     * @param \Closure(DocumentNodeInfo $nodeInfo, NodeAddress $nodeAddress):void $closure
+     */
     private function handleNodeWasMoved(NodeAggregateWasMoved $event, \Closure $closure): void
     {
         if (!$this->isLiveContentStream($event->contentStreamId)) {
@@ -202,13 +203,12 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
                 continue;
             }
 
-            $closure($node, $this->getNodeAddress($event->contentStreamId, $interdimensionalSibling->dimensionSpacePoint, $node->getNodeAggregateId()), $this->contentRepository->id);
+            $closure($node, NodeAddress::create($this->contentRepository->id, $event->workspaceName, $interdimensionalSibling->dimensionSpacePoint, $node->getNodeAggregateId()));
 
             $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
             array_map(fn (DocumentNodeInfo $descendantOfNode) => $closure(
                 $descendantOfNode,
-                $this->getNodeAddress($event->contentStreamId, $interdimensionalSibling->dimensionSpacePoint, $descendantOfNode->getNodeAggregateId()),
-                $this->contentRepository->id
+                NodeAddress::create($this->contentRepository->id, $event->workspaceName, $interdimensionalSibling->dimensionSpacePoint, $descendantOfNode->getNodeAggregateId())
             ), iterator_to_array($descendantsOfNode));
         }
     }
@@ -230,17 +230,5 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
         } catch (NodeNotFoundException $_) {
             return null;
         }
-    }
-
-    protected function getNodeAddress(
-        ContentStreamId $contentStreamId,
-        DimensionSpacePoint $dimensionSpacePoint,
-        NodeAggregateId $nodeAggregateId,
-    ): NodeAddress {
-        return NodeAddressFactory::create($this->contentRepository)->createFromContentStreamIdAndDimensionSpacePointAndNodeAggregateId(
-            $contentStreamId,
-            $dimensionSpacePoint,
-            $nodeAggregateId
-        );
     }
 }

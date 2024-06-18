@@ -13,12 +13,15 @@ namespace Neos\RedirectHandler\NeosAdapter\Service;
  * source code.
  */
 
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
 use Neos\Neos\Domain\Model\Domain;
 use Neos\Neos\Domain\Model\SiteNodeName;
 use Neos\Neos\Domain\Repository\SiteRepository;
+use Neos\Neos\FrontendRouting\NodeUriBuilderFactory;
 use Neos\RedirectHandler\Storage\RedirectStorageInterface;
+use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerInterface;
 use Neos\ContentRepository\Core\NodeType\NodeType;
 use Neos\Neos\FrontendRouting\NodeUriBuilder;
@@ -27,7 +30,6 @@ use GuzzleHttp\Psr7\ServerRequest;
 use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Neos\FrontendRouting\Projection\DocumentNodeInfo;
-use Neos\Neos\FrontendRouting\NodeAddress;
 use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use GuzzleHttp\Psr7\Uri;
@@ -45,7 +47,13 @@ final class NodeRedirectService
     const STATUS_CODE_TYPE_REDIRECT = 'redirect';
     const STATUS_CODE_TYPE_GONE = 'gone';
 
+    /**
+     * @var array<string,array{node:DocumentNodeInfo,url:UriInterface}|null>
+     */
     private array $affectedNodes = [];
+    /**
+     * @var array<string,list<string>>
+     */
     private array $hostnamesRuntimeCache = [];
 
     #[Flow\Inject]
@@ -76,25 +84,23 @@ final class NodeRedirectService
     protected array $restrictByNodeType = [];
 
     public function __construct(
-        protected RedirectStorageInterface $redirectStorage,
-        protected PersistenceManagerInterface $persistenceManager,
-        protected ContentRepositoryRegistry $contentRepositoryRegistry,
-        protected SiteRepository $siteRepository,
+        private readonly RedirectStorageInterface $redirectStorage,
+        private readonly PersistenceManagerInterface $persistenceManager,
+        private readonly ContentRepositoryRegistry $contentRepositoryRegistry,
+        private readonly SiteRepository $siteRepository,
+        private readonly NodeUriBuilderFactory $nodeUriBuilderFactory
     ) {
     }
 
     /**
      * Collects affected nodes before they got moved or removed.
-     *
-     * @throws \Neos\Flow\Http\Exception
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    public function appendAffectedNode(DocumentNodeInfo $nodeInfo, NodeAddress $nodeAddress, ContentRepositoryId $contentRepositoryId): void
+    public function appendAffectedNode(DocumentNodeInfo $nodeInfo, NodeAddress $nodeAddress): void
     {
         try {
-            $this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $contentRepositoryId)] = [
+            $this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $nodeAddress->contentRepositoryId)] = [
                 'node' => $nodeInfo,
-                'url' => $this->getNodeUriBuilder($nodeInfo->getSiteNodeName(), $contentRepositoryId)->uriFor($nodeAddress),
+                'url' => $this->getNodeUriBuilder($nodeInfo->getSiteNodeName(), $nodeAddress->contentRepositoryId)->uriFor($nodeAddress),
             ];
         } catch (NoMatchingRouteException $exception) {
         }
@@ -102,31 +108,28 @@ final class NodeRedirectService
 
     /**
      * Creates redirects for given node and uses the collected affected nodes to determine the source of the new redirect target.
-     *
-     * @throws \Neos\Flow\Http\Exception
-     * @throws \Neos\Flow\Mvc\Routing\Exception\MissingActionNameException
      */
-    public function createRedirectForAffectedNode(DocumentNodeInfo $nodeInfo, NodeAddress $nodeAddress, ContentRepositoryId $contentRepositoryId): void
+    public function createRedirectForAffectedNode(DocumentNodeInfo $nodeInfo, NodeAddress $nodeAddress): void
     {
         if (!$this->enableAutomaticRedirects) {
             return;
         }
 
-        $affectedNode = $this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $contentRepositoryId)] ?? null;
+        $affectedNode = $this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $nodeAddress->contentRepositoryId)] ?? null;
         if ($affectedNode === null) {
             return;
         }
-        unset($this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $contentRepositoryId)]);
+        unset($this->affectedNodes[$this->createAffectedNodesKey($nodeInfo, $nodeAddress->contentRepositoryId)]);
 
         /** @var Uri $oldUri */
         $oldUri = $affectedNode['url'];
-        $nodeType = $this->getNodeType($contentRepositoryId, $nodeInfo->getNodeTypeName());
+        $nodeType = $this->getNodeType($nodeAddress->contentRepositoryId, $nodeInfo->getNodeTypeName());
 
         if ($this->isRestrictedByNodeType($nodeType) || $this->isRestrictedByOldUri($oldUri->getPath())) {
             return;
         }
         try {
-            $newUri = $this->getNodeUriBuilder($nodeInfo->getSiteNodeName(), $contentRepositoryId)->uriFor($nodeAddress);
+            $newUri = $this->getNodeUriBuilder($nodeInfo->getSiteNodeName(), $nodeAddress->contentRepositoryId)->uriFor($nodeAddress);
         } catch (NoMatchingRouteException $exception) {
             // We can't build an uri for given node, so we can't create any redirect. E.g.: Node is disabled.
             return;
@@ -179,15 +182,12 @@ final class NodeRedirectService
         // Generate a custom request when the current request was triggered from CLI
         $baseUri = 'http://localhost';
 
-        // Prevent `index.php` appearing in generated redirects
-        putenv('FLOW_REWRITEURLS=1');
-
         $httpRequest = new ServerRequest('POST', $baseUri);
 
         $httpRequest = (SiteDetectionResult::create($siteNodeName, $contentRepositoryId))->storeInRequest($httpRequest);
         $actionRequest = ActionRequest::fromHttpRequest($httpRequest);
 
-        return NodeUriBuilder::fromRequest($actionRequest);
+        return $this->nodeUriBuilderFactory->forActionRequest($actionRequest);
     }
 
     /**
@@ -283,7 +283,7 @@ final class NodeRedirectService
 
     /**
      * Collects all hostnames from the Domain entries attached to the current site.
-     * @return array<string, array<string>>
+     * @return list<string>
      */
     protected function getHostnames(SiteNodeName $siteNodeName): array
     {
