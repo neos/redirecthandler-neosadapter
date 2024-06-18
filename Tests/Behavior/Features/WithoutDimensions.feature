@@ -43,9 +43,9 @@ Feature: Basic redirect handling with document nodes without dimensions
       | workspaceTitle       | "Live"               |
       | workspaceDescription | "The live workspace" |
       | newContentStreamId   | "cs-identifier"      |
+    And I am in workspace "live" and dimension space point {}
     And the command CreateRootNodeAggregateWithNode is executed with payload:
       | Key             | Value             |
-      | contentStreamId | "cs-identifier"   |
       | nodeAggregateId | "site-root"       |
       | nodeTypeName    | "Neos.Neos:Sites" |
 
@@ -57,7 +57,6 @@ Feature: Basic redirect handling with document nodes without dimensions
     #      imprint
     #      buy
     #      mail
-    And I am in content stream "cs-identifier" and dimension space point {}
     And the following CreateNodeAggregateWithNode commands are executed:
       | nodeAggregateId        | parentNodeAggregateId | nodeTypeName                           | initialPropertyValues                        | nodeName |
       | behat                  | site-root             | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "home"}                   | node1    |
@@ -86,7 +85,6 @@ Feature: Basic redirect handling with document nodes without dimensions
   Scenario: Move a node down into different node and a redirect will be created
     When the command MoveNodeAggregate is executed with payload:
       | Key                                 | Value           |
-      | contentStreamId                     | "cs-identifier" |
       | nodeAggregateId                     | "imprint"       |
       | dimensionSpacePoint                 | {}              |
       | newParentNodeAggregateId            | "company"       |
@@ -96,7 +94,6 @@ Feature: Basic redirect handling with document nodes without dimensions
   Scenario: Move a node up into different node and a redirect will be created
     When the command MoveNodeAggregate is executed with payload:
       | Key                                 | Value           |
-      | contentStreamId                     | "cs-identifier" |
       | nodeAggregateId                     | "service"       |
       | dimensionSpacePoint                 | {}              |
       | newParentNodeAggregateId            | "behat"         |
@@ -107,7 +104,6 @@ Feature: Basic redirect handling with document nodes without dimensions
   Scenario: Change the the `uriPathSegment` and a redirect will be created
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                           |
-      | contentStreamId           | "cs-identifier"                 |
       | nodeAggregateId           | "company"                       |
       | originDimensionSpacePoint | {}                              |
       | propertyValues            | {"uriPathSegment": "evil-corp"} |
@@ -118,13 +114,11 @@ Feature: Basic redirect handling with document nodes without dimensions
   Scenario: Change the the `uriPathSegment` multiple times and multiple redirects will be created
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                           |
-      | contentStreamId           | "cs-identifier"                 |
       | nodeAggregateId           | "company"                       |
       | originDimensionSpacePoint | {}                              |
       | propertyValues            | {"uriPathSegment": "evil-corp"} |
     And the command SetNodeProperties is executed with payload:
       | Key                       | Value                                |
-      | contentStreamId           | "cs-identifier"                      |
       | nodeAggregateId           | "company"                            |
       | originDimensionSpacePoint | {}                                   |
       | propertyValues            | {"uriPathSegment": "more-evil-corp"} |
@@ -142,7 +136,6 @@ Feature: Basic redirect handling with document nodes without dimensions
       | company       | company-old   |
     And the command SetNodeProperties is executed with payload:
       | Key                       | Value                            |
-      | contentStreamId           | "cs-identifier"                  |
       | nodeAggregateId           | "company"                        |
       | originDimensionSpacePoint | {}                               |
       | propertyValues            | {"uriPathSegment": "my-company"} |
@@ -154,7 +147,6 @@ Feature: Basic redirect handling with document nodes without dimensions
   Scenario: No redirect should be created for an existing node if any non URI related property changes
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value               |
-      | contentStreamId           | "cs-identifier"     |
       | nodeAggregateId           | "buy"               |
       | originDimensionSpacePoint | {}                  |
       | propertyValues            | {"title": "my-buy"} |
@@ -164,7 +156,6 @@ Feature: Basic redirect handling with document nodes without dimensions
   Scenario: No redirect should be created for an restricted node by nodetype
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                                            |
-      | contentStreamId           | "cs-identifier"                                  |
       | nodeAggregateId           | "restricted-by-nodetype"                         |
       | originDimensionSpacePoint | {}                                               |
       | propertyValues            | {"uriPathSegment": "restricted-by-nodetype-new"} |
@@ -174,13 +165,11 @@ Feature: Basic redirect handling with document nodes without dimensions
   Scenario: Redirects should be created for a hidden node
     When the command DisableNodeAggregate is executed with payload:
       | Key                          | Value           |
-      | contentStreamId              | "cs-identifier" |
       | nodeAggregateId              | "mail"          |
       | coveredDimensionSpacePoint   | {}              |
       | nodeVariantSelectionStrategy | "allVariants"   |
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                          |
-      | contentStreamId           | "cs-identifier"                |
       | nodeAggregateId           | "mail"                         |
       | originDimensionSpacePoint | {}                             |
       | propertyValues            | {"uriPathSegment": "not-mail"} |
@@ -190,7 +179,6 @@ Feature: Basic redirect handling with document nodes without dimensions
   Scenario: A removed node should lead to a GONE response with empty target uri
     Given the command RemoveNodeAggregate is executed with payload:
       | Key                          | Value           |
-      | contentStreamId              | "cs-identifier" |
       | nodeAggregateId              | "company"       |
       | nodeVariantSelectionStrategy | "allVariants"   |
 
