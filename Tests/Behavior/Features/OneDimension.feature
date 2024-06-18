@@ -112,7 +112,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | sourceOrigin    | {"language":"en"} |
       | targetOrigin    | {"language":"de"} |
 
-  @fixtures
   Scenario: Move a node down into different node and a redirect will be created
     When the command MoveNodeAggregate is executed with payload:
       | Key                                 | Value              |
@@ -124,7 +123,6 @@ Feature: Basic redirect handling with document nodes in one dimension
     And I should have a redirect with sourceUri "imprint.html" and targetUri "company/imprint.html"
     And I should have a redirect with sourceUri "ch/imprint.html" and targetUri "ch/company/imprint.html"
 
-  @fixtures
   Scenario: Move a node up into different node and a redirect will be created
     When the command MoveNodeAggregate is executed with payload:
       | Key                                 | Value              |
@@ -136,7 +134,6 @@ Feature: Basic redirect handling with document nodes in one dimension
     And I should have a redirect with sourceUri "company/service.html" and targetUri "service.html"
     And I should have a redirect with sourceUri "ch/company/service.html" and targetUri "ch/service.html"
 
-  @fixtures
   Scenario: Change the the `uriPathSegment` and a redirect will be created
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                           |
@@ -157,7 +154,6 @@ Feature: Basic redirect handling with document nodes in one dimension
     And I should have no redirect with sourceUri "ch/company/service.html"
 
 
-  @fixtures
   Scenario: Change the the `uriPathSegment` multiple times and multiple redirects will be created
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                           |
@@ -176,7 +172,6 @@ Feature: Basic redirect handling with document nodes in one dimension
     And I should have a redirect with sourceUri "en/evil-corp/service.html" and targetUri "en/more-evil-corp/service.html"
 
 
-  @fixtures
   Scenario: Retarget an existing redirect when the source URI matches the source URI of the new redirect
     When I have the following redirects:
       | sourceuripath | targeturipath |
@@ -190,7 +185,6 @@ Feature: Basic redirect handling with document nodes in one dimension
     And I should have no redirect with sourceUri "en/company.html" and targetUri "en/company-old.html"
     And I should have a redirect with sourceUri "en/company/service.html" and targetUri "en/my-company/service.html"
 
-  @fixtures
   Scenario: No redirect should be created for an existing node if any non URI related property changes
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value               |
@@ -199,7 +193,6 @@ Feature: Basic redirect handling with document nodes in one dimension
       | propertyValues            | {"title": "my-buy"} |
         Then I should have no redirect with sourceUri "en/buy.html"
 
-  @fixtures
   Scenario: No redirect should be created for an restricted node by nodetype
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                                            |
@@ -208,8 +201,7 @@ Feature: Basic redirect handling with document nodes in one dimension
       | propertyValues            | {"uriPathSegment": "restricted-by-nodetype-new"} |
         Then I should have no redirect with sourceUri "en/restricted.html"
 
-#  @fixtures
-#  Scenario: Redirects should be created for a hidden node
+##  Scenario: Redirects should be created for a hidden node
 #    When the command DisableNodeAggregate is executed with payload:
 #      | Key                          | Value              |
 #      | nodeAggregateId              | "mail"             |
@@ -222,7 +214,6 @@ Feature: Basic redirect handling with document nodes in one dimension
 #      | propertyValues            | {"uriPathSegment": "not-mail"} |
 #    #    Then I should have a redirect with sourceUri "en/mail.html" and targetUri "en/not-mail.html"
 
-  @fixtures
   Scenario: Change the the `uriPathSegment` and a redirect will be created also for fallback
 
     And the command SetNodeProperties is executed with payload:
@@ -237,7 +228,6 @@ Feature: Basic redirect handling with document nodes in one dimension
     And I should have a redirect with sourceUri "ch/company/service.html" and targetUri "ch/unternehmen/service.html"
 
 
-  @fixtures
   Scenario: A removed node should lead to a GONE response with empty target uri (allSpecializations)
     Given the command RemoveNodeAggregate is executed with payload:
       | Key                          | Value                |
@@ -255,7 +245,6 @@ Feature: Basic redirect handling with document nodes in one dimension
     And I should have no redirect with sourceUri "ch/company.html"
     And I should have no redirect with sourceUri "ch/company/service.html"
 
-  @fixtures
   Scenario: A removed node should lead to a GONE response with empty target uri (allVariants)
     Given the command RemoveNodeAggregate is executed with payload:
       | Key                          | Value              |
@@ -278,7 +267,6 @@ Feature: Basic redirect handling with document nodes in one dimension
     And I should have a redirect with sourceUri "ch/company/service.html" and statusCode "410"
     And I should have a redirect with sourceUri "ch/company/service.html" and targetUri ""
 
-  @fixtures
   Scenario: A removed node should lead to a GONE response with empty target uri also for fallback (allSpecializations)
     Given the command RemoveNodeAggregate is executed with payload:
       | Key                          | Value                |

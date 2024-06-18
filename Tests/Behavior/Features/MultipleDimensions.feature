@@ -133,7 +133,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
       | sourceOrigin    | {"language":"en", "market": "DE"} |
       | targetOrigin    | {"language":"en", "market": "CH"} |
 
-  @fixtures
   Scenario: Move a node down into different node and a redirect will be created
     When the command MoveNodeAggregate is executed with payload:
       | Key                                 | Value                              |
@@ -148,7 +147,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
     Then I should have a redirect with sourceUri "ch_DE/imprint.html" and targetUri "ch_DE/company/imprint.html"
     Then I should have a redirect with sourceUri "ch_CH/imprint.html" and targetUri "ch_CH/company/imprint.html"
 
-  @fixtures
   Scenario: Move a node up into different node and a redirect will be created
     When the command MoveNodeAggregate is executed with payload:
       | Key                                 | Value                              |
@@ -164,7 +162,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
     And I should have a redirect with sourceUri "ch_DE/company/service.html" and targetUri "ch_DE/service.html"
     And I should have a redirect with sourceUri "ch_CH/company/service.html" and targetUri "ch_CH/service.html"
 
-  @fixtures
   Scenario: Change the the `uriPathSegment` and a redirect will be created
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                              |
@@ -181,7 +178,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
     And I should have no redirect with sourceUri "ch_CH/company.html"
     And I should have no redirect with sourceUri "ch_DE/company.html"
 
-  @fixtures
   Scenario: Change the the `uriPathSegment` multiple times and multiple redirects will be created
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                              |
@@ -205,7 +201,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
     And I should have no redirect with sourceUri "DE/company.html"
     And I should have no redirect with sourceUri "en_DE/company.html"
 
-  @fixtures
   Scenario: Retarget an existing redirect when the source URI matches the source URI of the new redirect
     When I have the following redirects:
       | sourceuripath      | targeturipath          |
@@ -221,7 +216,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
 
     And I should have no redirect with sourceUri "en_CH/company.html" and targetUri "en_CH/company-old.html"
 
-  @fixtures
   Scenario: No redirect should be created for an existing node if any non URI related property changes
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                              |
@@ -230,7 +224,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
       | propertyValues            | {"title": "my-buy"}                |
     Then I should have no redirect with sourceUri "en_DE/buy.html"
 
-  @fixtures
   Scenario: No redirect should be created for an restricted node by nodetype
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                                            |
@@ -239,8 +232,7 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
       | propertyValues            | {"uriPathSegment": "restricted-by-nodetype-new"} |
     Then I should have no redirect with sourceUri "en/restricted.html"
 
-#  @fixtures
-#  Scenario: Redirects should be created for a hidden node
+##  Scenario: Redirects should be created for a hidden node
 #    When the command DisableNodeAggregate is executed with payload:
 #      | Key                          | Value                              |
 #      | nodeAggregateId              | "mail"                             |
@@ -254,7 +246,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
 #    Then I should have a redirect with sourceUri "en_DE/mail.html" and targetUri "en_DE/not-mail.html"
 #    Then I should have a redirect with sourceUri "en_CH/mail.html" and targetUri "en_CH/not-mail.html"
 
-  @fixtures
   Scenario: Change the the `uriPathSegment` and a redirect will be created also for fallback
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                              |
@@ -276,7 +267,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
     And I should have no redirect with sourceUri "en_CH/company.html"
     And I should have no redirect with sourceUri "en_CH/company/service.html"
 
-  @fixtures
   Scenario: A removed node should lead to a GONE response with empty target uri (allSpecializations)
     Given the command RemoveNodeAggregate is executed with payload:
       | Key                          | Value                              |
@@ -304,7 +294,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
     And I should have no redirect with sourceUri "en_DE/company/service.html"
     And I should have no redirect with sourceUri "en_DE/company/about.html"
 
-  @fixtures
   Scenario: A removed node should lead to a GONE response with empty target uri (allVariants)
     Given the command RemoveNodeAggregate is executed with payload:
       | Key                          | Value                              |
@@ -347,7 +336,6 @@ Feature: Basic redirect handling with document nodes in multiple dimensions
     And I should have a redirect with sourceUri "en_DE/company/about.html" and targetUri ""
 
 
-  @fixtures
   Scenario: A removed node should lead to a GONE response with empty target uri also for fallback (allSpecializations)
     Given the command RemoveNodeAggregate is executed with payload:
       | Key                          | Value                               |
