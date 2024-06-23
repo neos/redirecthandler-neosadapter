@@ -109,19 +109,13 @@ jobs:
                 dbname: 'neos_functional_testing'
         EOF
 
-    - name: Setup database schema
-      run: |
-        cd ${NEOS_BASE_FOLDER}
-        ./flow doctrine:migrate --quite
-
-    - name: Setup CR
-      run: |
-        cd ${NEOS_BASE_FOLDER}
-        ./flow cr:setup
-
     - name: Run Behavioral tests
       run: |
         cd ${NEOS_BASE_FOLDER}
+        # we have to doctrine migrate and setup the cr here as otherwise a transaction error will occur:
+        # see also https://github.com/neos/neos-development-collection/pull/5005
+        FLOW_CONTEXT=Testing ./flow doctrine:migrate --quiet; FLOW_CONTEXT=Testing ./flow cr:setup
+
         cd Packages/Application/Neos.RedirectHandler.NeosAdapter
         composer run test:behavioral:stop-on-failure
 
