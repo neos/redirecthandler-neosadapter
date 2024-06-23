@@ -122,7 +122,8 @@ jobs:
     - name: Run Behavioral tests
       run: |
         cd ${NEOS_BASE_FOLDER}
-        bin/behat -f progress --strict --no-interaction -vvv --stop-on-failure -c Packages/Application/Neos.RedirectHandler.NeosAdapter/Tests/Behavior/behat.yml.dist
+        cd Packages/Application/Neos.RedirectHandler.NeosAdapter
+        composer run test:behavioral:stop-on-failure
 
     - name: Show log on failure
       if: ${{ failure()  }}
