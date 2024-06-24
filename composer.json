@@ -10,6 +10,7 @@
         "neos/flow": "^9.0"
     },
     "scripts": {
+        "lint:phpstan": "../../../bin/phpstan analyse",
         "test:behat-cli": "../../../bin/behat -f progress --strict --no-interaction",
         "test:behavioral:stop-on-failure": "@test:behat-cli -c Tests/Behavior/behat.yml.dist -vvv --stop-on-failure"
     },

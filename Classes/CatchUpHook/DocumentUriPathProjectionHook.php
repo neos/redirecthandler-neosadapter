@@ -161,7 +161,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
                 continue;
             }
 
-            $closure($node,  NodeAddress::create($this->contentRepository->id, $event->workspaceName, $affectedDimensionSpacePoint, $node->getNodeAggregateId()));
+            $closure($node, NodeAddress::create($this->contentRepository->id, $event->workspaceName, $affectedDimensionSpacePoint, $node->getNodeAggregateId()));
 
             $descendantsOfNode = $this->getState()->getDescendantsOfNode($node);
             array_map(fn (DocumentNodeInfo $descendantOfNode) => $closure(
