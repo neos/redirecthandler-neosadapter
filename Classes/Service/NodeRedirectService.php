@@ -125,7 +125,7 @@ final class NodeRedirectService
         $oldUri = $affectedNode['url'];
         $nodeType = $this->getNodeType($nodeAddress->contentRepositoryId, $nodeInfo->getNodeTypeName());
 
-        if ($this->isRestrictedByNodeType($nodeType) || $this->isRestrictedByOldUri($oldUri->getPath())) {
+        if (!$nodeType || $this->isRestrictedByNodeType($nodeType) || $this->isRestrictedByOldUri($oldUri->getPath())) {
             return;
         }
         try {
@@ -158,7 +158,7 @@ final class NodeRedirectService
         $oldUri = $affectedNode['url'];
         $nodeType = $this->getNodeType($contentRepositoryId, $nodeInfo->getNodeTypeName());
 
-        if ($this->isRestrictedByNodeType($nodeType) || $this->isRestrictedByOldUri($oldUri->getPath())) {
+        if (!$nodeType || $this->isRestrictedByNodeType($nodeType) || $this->isRestrictedByOldUri($oldUri->getPath())) {
             return;
         }
 
@@ -167,7 +167,7 @@ final class NodeRedirectService
         $this->persistenceManager->persistAll();
     }
 
-    protected function getNodeType(ContentRepositoryId $contentRepositoryId, NodeTypeName $nodeTypeName): NodeType
+    protected function getNodeType(ContentRepositoryId $contentRepositoryId, NodeTypeName $nodeTypeName): ?NodeType
     {
         return $this->contentRepositoryRegistry->get($contentRepositoryId)->getNodeTypeManager()->getNodeType($nodeTypeName);
     }
