@@ -82,7 +82,7 @@ jobs:
         cd ${NEOS_BASE_FOLDER}
         composer require --no-update --no-interaction neos/redirecthandler:"^6.0"
         composer require --no-update --no-interaction neos/redirecthandler-databasestorage:"^6.0"
-        
+
         git -C ../${{ env.PACKAGE_FOLDER }} checkout -b build
         composer config repositories.package '{ "type": "path", "url": "../${{ env.PACKAGE_FOLDER }}", "options": { "symlink": false } }'
         composer require --no-update --no-interaction neos/redirecthandler-neosadapter:"dev-build as dev-${PACKAGE_TARGET_VERSION}"
@@ -94,7 +94,7 @@ jobs:
 
     - name: Setup Flow configuration
       run: |
-        cd ${NEOS_BASE_FOLDER} 
+        cd ${NEOS_BASE_FOLDER}
         mkdir -p Configuration/Testing
         rm -f Configuration/Testing/Settings.yaml
         cat <<EOF >> Configuration/Testing/Settings.yaml
@@ -109,20 +109,15 @@ jobs:
                 dbname: 'neos_functional_testing'
         EOF
 
-    - name: Setup database schema
+    - name: Run Behavioral tests
       run: |
         cd ${NEOS_BASE_FOLDER}
-        ./flow doctrine:migrate --quite
+        # we have to doctrine migrate and setup the cr here as otherwise a transaction error will occur:
+        # see also https://github.com/neos/neos-development-collection/pull/5005
+        FLOW_CONTEXT=Testing ./flow doctrine:migrate --quiet; FLOW_CONTEXT=Testing ./flow cr:setup
 
-    - name: Setup CR
-      run: |
-        cd ${NEOS_BASE_FOLDER}
-        ./flow cr:setup
-
-    - name: Run Functional tests
-      run: |
-        cd ${NEOS_BASE_FOLDER}
-        CATCHUPTRIGGER_ENABLE_SYNCHRONOUS_OPTION=1 bin/behat -c Packages/Application/Neos.RedirectHandler.NeosAdapter/Tests/Behavior/behat.yml.dist
+        cd Packages/Application/Neos.RedirectHandler.NeosAdapter
+        composer run test:behavioral:stop-on-failure
 
     - name: Show log on failure
       if: ${{ failure()  }}

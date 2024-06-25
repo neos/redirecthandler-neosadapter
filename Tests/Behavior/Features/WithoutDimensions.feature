@@ -1,4 +1,4 @@
-@fixtures @contentrepository
+@flowEntities
 Feature: Basic redirect handling with document nodes without dimensions
 
   Background:
@@ -43,12 +43,11 @@ Feature: Basic redirect handling with document nodes without dimensions
       | workspaceTitle       | "Live"               |
       | workspaceDescription | "The live workspace" |
       | newContentStreamId   | "cs-identifier"      |
+    And I am in workspace "live" and dimension space point {}
     And the command CreateRootNodeAggregateWithNode is executed with payload:
       | Key             | Value             |
-      | contentStreamId | "cs-identifier"   |
       | nodeAggregateId | "site-root"       |
       | nodeTypeName    | "Neos.Neos:Sites" |
-    And the graph projection is fully up to date
 
     # site-root
     #   behat
@@ -58,7 +57,6 @@ Feature: Basic redirect handling with document nodes without dimensions
     #      imprint
     #      buy
     #      mail
-    And I am in content stream "cs-identifier" and dimension space point {}
     And the following CreateNodeAggregateWithNode commands are executed:
       | nodeAggregateId        | parentNodeAggregateId | nodeTypeName                           | initialPropertyValues                        | nodeName |
       | behat                  | site-root             | Neos.Neos:Test.Redirect.Page           | {"uriPathSegment": "home"}                   | node1    |
@@ -82,58 +80,45 @@ Feature: Basic redirect handling with document nodes without dimensions
               resolver:
                 factoryClassName: Neos\Neos\FrontendRouting\DimensionResolution\Resolver\NoopResolverFactory
     """
-    And The documenturipath projection is up to date
 
-  @fixtures
   Scenario: Move a node down into different node and a redirect will be created
     When the command MoveNodeAggregate is executed with payload:
       | Key                                 | Value           |
-      | contentStreamId                     | "cs-identifier" |
       | nodeAggregateId                     | "imprint"       |
       | dimensionSpacePoint                 | {}              |
       | newParentNodeAggregateId            | "company"       |
       | newSucceedingSiblingNodeAggregateId | null            |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "imprint.html" and targetUri "company/imprint.html"
+        Then I should have a redirect with sourceUri "imprint.html" and targetUri "company/imprint.html"
 
   Scenario: Move a node up into different node and a redirect will be created
     When the command MoveNodeAggregate is executed with payload:
       | Key                                 | Value           |
-      | contentStreamId                     | "cs-identifier" |
       | nodeAggregateId                     | "service"       |
       | dimensionSpacePoint                 | {}              |
       | newParentNodeAggregateId            | "behat"         |
       | newSucceedingSiblingNodeAggregateId | null            |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "company/service.html" and targetUri "service.html"
+        Then I should have a redirect with sourceUri "company/service.html" and targetUri "service.html"
 
-  @fixtures
   Scenario: Change the the `uriPathSegment` and a redirect will be created
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                           |
-      | contentStreamId           | "cs-identifier"                 |
       | nodeAggregateId           | "company"                       |
       | originDimensionSpacePoint | {}                              |
       | propertyValues            | {"uriPathSegment": "evil-corp"} |
-    And The documenturipath projection is up to date
     Then I should have a redirect with sourceUri "company.html" and targetUri "evil-corp.html"
     And I should have a redirect with sourceUri "company/service.html" and targetUri "evil-corp/service.html"
 
-  @fixtures
   Scenario: Change the the `uriPathSegment` multiple times and multiple redirects will be created
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                           |
-      | contentStreamId           | "cs-identifier"                 |
       | nodeAggregateId           | "company"                       |
       | originDimensionSpacePoint | {}                              |
       | propertyValues            | {"uriPathSegment": "evil-corp"} |
     And the command SetNodeProperties is executed with payload:
       | Key                       | Value                                |
-      | contentStreamId           | "cs-identifier"                      |
       | nodeAggregateId           | "company"                            |
       | originDimensionSpacePoint | {}                                   |
       | propertyValues            | {"uriPathSegment": "more-evil-corp"} |
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "company.html" and targetUri "more-evil-corp.html"
     And I should have a redirect with sourceUri "company/service.html" and targetUri "more-evil-corp/service.html"
@@ -141,71 +126,53 @@ Feature: Basic redirect handling with document nodes without dimensions
     And I should have a redirect with sourceUri "evil-corp/service.html" and targetUri "more-evil-corp/service.html"
 
 
-  @fixtures
   Scenario: Retarget an existing redirect when the source URI matches the source URI of the new redirect
     When I have the following redirects:
       | sourceuripath | targeturipath |
       | company       | company-old   |
     And the command SetNodeProperties is executed with payload:
       | Key                       | Value                            |
-      | contentStreamId           | "cs-identifier"                  |
       | nodeAggregateId           | "company"                        |
       | originDimensionSpacePoint | {}                               |
       | propertyValues            | {"uriPathSegment": "my-company"} |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "company.html" and targetUri "my-company.html"
+        Then I should have a redirect with sourceUri "company.html" and targetUri "my-company.html"
     And I should have no redirect with sourceUri "company.html" and targetUri "company-old.html"
     And I should have a redirect with sourceUri "company/service.html" and targetUri "my-company/service.html"
 
-  @fixtures
   Scenario: No redirect should be created for an existing node if any non URI related property changes
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value               |
-      | contentStreamId           | "cs-identifier"     |
       | nodeAggregateId           | "buy"               |
       | originDimensionSpacePoint | {}                  |
       | propertyValues            | {"title": "my-buy"} |
-    And The documenturipath projection is up to date
-    Then I should have no redirect with sourceUri "buy.html"
+        Then I should have no redirect with sourceUri "buy.html"
 
-  @fixtures
   Scenario: No redirect should be created for an restricted node by nodetype
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                                            |
-      | contentStreamId           | "cs-identifier"                                  |
       | nodeAggregateId           | "restricted-by-nodetype"                         |
       | originDimensionSpacePoint | {}                                               |
       | propertyValues            | {"uriPathSegment": "restricted-by-nodetype-new"} |
-    And The documenturipath projection is up to date
-    Then I should have no redirect with sourceUri "restricted.html"
+        Then I should have no redirect with sourceUri "restricted.html"
 
-  @fixtures
   Scenario: Redirects should be created for a hidden node
     When the command DisableNodeAggregate is executed with payload:
       | Key                          | Value           |
-      | contentStreamId              | "cs-identifier" |
       | nodeAggregateId              | "mail"          |
       | coveredDimensionSpacePoint   | {}              |
       | nodeVariantSelectionStrategy | "allVariants"   |
-    And the graph projection is fully up to date
     When the command SetNodeProperties is executed with payload:
       | Key                       | Value                          |
-      | contentStreamId           | "cs-identifier"                |
       | nodeAggregateId           | "mail"                         |
       | originDimensionSpacePoint | {}                             |
       | propertyValues            | {"uriPathSegment": "not-mail"} |
-    And The documenturipath projection is up to date
-    Then I should have a redirect with sourceUri "mail.html" and targetUri "not-mail.html"
+        Then I should have a redirect with sourceUri "mail.html" and targetUri "not-mail.html"
 
-  @fixtures
   Scenario: A removed node should lead to a GONE response with empty target uri
     Given the command RemoveNodeAggregate is executed with payload:
       | Key                          | Value           |
-      | contentStreamId              | "cs-identifier" |
       | nodeAggregateId              | "company"       |
       | nodeVariantSelectionStrategy | "allVariants"   |
-    And the graph projection is fully up to date
-    And The documenturipath projection is up to date
 
     Then I should have a redirect with sourceUri "company.html" and statusCode "410"
     And I should have a redirect with sourceUri "company.html" and targetUri ""
