@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['8.2']
+        php-versions: ['8.2', '8.3']
 
     services:
       mariadb:
@@ -86,11 +86,17 @@ jobs:
         git -C ../${{ env.PACKAGE_FOLDER }} checkout -b build
         composer config repositories.package '{ "type": "path", "url": "../${{ env.PACKAGE_FOLDER }}", "options": { "symlink": false } }'
         composer require --no-update --no-interaction neos/redirecthandler-neosadapter:"dev-build as dev-${PACKAGE_TARGET_VERSION}"
+        composer require --dev --no-update --no-interaction phpstan/phpstan:^1.11
 
     - name: Composer Install
       run: |
         cd ${NEOS_BASE_FOLDER}
         composer update --no-interaction --no-progress
+
+    - name: Linting
+      run: |
+        cd ${NEOS_BASE_FOLDER}/Packages/Application/Neos.RedirectHandler.NeosAdapter
+        composer run lint:phpstan
 
     - name: Setup Flow configuration
       run: |
