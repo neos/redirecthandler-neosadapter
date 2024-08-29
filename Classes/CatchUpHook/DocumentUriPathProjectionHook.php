@@ -195,6 +195,10 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
             return;
         }
 
+        if (!$event->newParentNodeAggregateId) {
+            return;
+        }
+
         foreach ($event->succeedingSiblingsForCoverage as $interdimensionalSibling) {
             $node = $this->findNodeByIdAndDimensionSpacePointHash($event->nodeAggregateId, $interdimensionalSibling->dimensionSpacePoint->hash);
             if ($node === null) {
