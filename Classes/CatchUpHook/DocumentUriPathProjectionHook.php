@@ -11,7 +11,6 @@ use Neos\ContentRepository\Core\Feature\NodeModification\Event\NodePropertiesWer
 use Neos\ContentRepository\Core\Feature\NodeMove\Event\NodeAggregateWasMoved;
 use Neos\ContentRepository\Core\Feature\NodeRemoval\Event\NodeAggregateWasRemoved;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
-use Neos\ContentRepository\Core\SharedModel\Workspace\ContentStreamId;
 use Neos\Neos\FrontendRouting\Projection\DocumentUriPathFinder;
 use Neos\Neos\FrontendRouting\Projection\DocumentNodeInfo;
 use Neos\Neos\FrontendRouting\Exception\NodeNotFoundException;
@@ -68,7 +67,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
 
     private function onBeforeNodeAggregateWasRemoved(NodeAggregateWasRemoved $event): void
     {
-        if (!$this->isLiveContentStream($event->contentStreamId)) {
+        if (!$event->workspaceName->isLive()) {
             return;
         }
 
@@ -103,7 +102,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
 
     private function onAfterNodeAggregateWasRemoved(NodeAggregateWasRemoved $event): void
     {
-        if (!$this->isLiveContentStream($event->contentStreamId)) {
+        if (!$event->workspaceName->isLive()) {
             return;
         }
 
@@ -145,7 +144,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
      */
     private function handleNodePropertiesWereSet(NodePropertiesWereSet $event, \Closure $closure): void
     {
-        if (!$this->isLiveContentStream($event->contentStreamId)) {
+        if (!$event->workspaceName->isLive()) {
             return;
         }
 
@@ -192,7 +191,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
      */
     private function handleNodeWasMoved(NodeAggregateWasMoved $event, \Closure $closure): void
     {
-        if (!$this->isLiveContentStream($event->contentStreamId)) {
+        if (!$event->workspaceName->isLive()) {
             return;
         }
 
@@ -216,11 +215,6 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
     private function getState(): DocumentUriPathFinder
     {
         return $this->contentRepository->projectionState(DocumentUriPathFinder::class);
-    }
-
-    private function isLiveContentStream(ContentStreamId $contentStreamId): bool
-    {
-        return $contentStreamId->equals($this->getState()->getLiveContentStreamId());
     }
 
     private function findNodeByIdAndDimensionSpacePointHash(NodeAggregateId $nodeAggregateId, string $dimensionSpacePointHash): ?DocumentNodeInfo
