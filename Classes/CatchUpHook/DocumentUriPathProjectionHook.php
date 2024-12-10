@@ -57,7 +57,7 @@ final class DocumentUriPathProjectionHook implements CatchUpHookInterface
         };
     }
 
-    public function onBeforeBatchCompleted(): void
+    public function onAfterBatchCompleted(): void
     {
         // Nothing to do here
     }
