@@ -65,13 +65,13 @@ jobs:
         sudo rm -rf ~/.composer
 
     - name: Cache dependencies
-      uses: actions/cache@v1
+      uses: actions/cache@v4
       with:
         path: ~/.composer/cache
         key: dependencies-composer-${{ hashFiles('composer.json') }}
 
     - name: Checkout development distribution
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         repository: neos/neos-development-distribution
         ref: ${{ env.NEOS_TARGET_VERSION }}
