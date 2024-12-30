@@ -2,9 +2,9 @@
 
 namespace Neos\RedirectHandler\NeosAdapter\CatchUpHook;
 
-use Neos\ContentRepository\Core\Projection\CatchupHook\CatchUpHookFactoryDependencies;
-use Neos\ContentRepository\Core\Projection\CatchupHook\CatchUpHookFactoryInterface;
-use Neos\ContentRepository\Core\Projection\CatchupHook\CatchUpHookInterface;
+use Neos\ContentRepository\Core\Projection\CatchUpHook\CatchUpHookFactoryDependencies;
+use Neos\ContentRepository\Core\Projection\CatchUpHook\CatchUpHookFactoryInterface;
+use Neos\ContentRepository\Core\Projection\CatchUpHook\CatchUpHookInterface;
 use Neos\Neos\FrontendRouting\Projection\DocumentUriPathFinder;
 use Neos\RedirectHandler\NeosAdapter\Service\NodeRedirectService;
 
